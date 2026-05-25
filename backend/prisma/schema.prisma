@@ -1,0 +1,193 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DB_PATH")
+}
+
+model User {
+  id           Int         @id @default(autoincrement())
+  username     String      @unique
+  passwordHash String
+  isAdmin      Boolean     @default(false)
+  createdAt    DateTime    @default(now())
+  characters   Character[]
+}
+
+model Character {
+  id                 Int               @id @default(autoincrement())
+  userId             Int
+  user               User              @relation(fields: [userId], references: [id])
+  name               String
+  peopleName         String
+  kingdom            String            @default("NEUTRAL") // VILLAGE_A | VILLAGE_B | NEUTRAL
+  socialStatus       String            @default("cittadino")
+  level              Int               @default(1)
+  xp                 Int               @default(0)
+  hp                 Int               @default(100)
+  energy             Int               @default(100)
+  reputationVillageA Int               @default(0)
+  reputationVillageB Int               @default(0)
+  isExcommunicated   Boolean           @default(false)
+  isBannedUntil      DateTime?
+  faceImagePath      String?
+  battleCryAudioPath String?
+  posX               Float             @default(0)
+  posY               Float             @default(0)
+  zone               String            @default("VillageA")
+  gold               Int               @default(0)
+  strength           Int               @default(3)
+  agility            Int               @default(3)
+  charisma           Int               @default(3)
+  intellect          Int               @default(3)
+  faith              Int               @default(3)
+  luck               Int               @default(3)
+  isPope             Boolean           @default(false)
+  isKing             Boolean           @default(false)
+  isPopeCorrupted    Boolean           @default(false)
+  createdAt          DateTime          @default(now())
+
+  characterRoles  CharacterRole[]
+  equipment       Equipment[]
+  proposedTreaties Treaty[]           @relation("TreatyProposer")
+  actionLogs       ActionLog[]
+  inventory        CharacterInventory?
+  quests           CharacterQuest[]
+}
+
+model Role {
+  id                   Int               @id @default(autoincrement())
+  name                 String            @unique
+  description          String
+  statModifiers        String            // JSON: { strength: 0, agility: 0, ... }
+  allowedEquipmentTypes String           // JSON: ["WEAPON", "ARMOR", ...]
+
+  characterRoles CharacterRole[]
+}
+
+model CharacterRole {
+  characterId Int
+  roleId      Int
+  character   Character @relation(fields: [characterId], references: [id], onDelete: Cascade)
+  role        Role      @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@id([characterId, roleId])
+}
+
+model Village {
+  id               Int       @id @default(autoincrement())
+  name             String    @unique
+  description      String
+  kingCharacterId  Int?
+}
+
+model Item {
+  id            Int      @id @default(autoincrement())
+  name          String
+  type          String   // WEAPON | ARMOR | RANGED | STAFF | TALISMAN | PET | CONSUMABLE
+  rarity        String   @default("common")
+  requiredRoles String   // JSON array of role names
+  statBonuses   String   // JSON: { atk: 5, def: 2, ... }
+  description   String
+  equipment     Equipment[]
+}
+
+model Equipment {
+  id          Int       @id @default(autoincrement())
+  characterId Int
+  character   Character @relation(fields: [characterId], references: [id], onDelete: Cascade)
+  itemId      Int
+  item        Item      @relation(fields: [itemId], references: [id])
+  slot        String    @default("main_hand") // main_hand, off_hand, body, accessory
+}
+
+model Quest {
+  id           Int     @id @default(autoincrement())
+  giverNpcId   Int?
+  description  String
+  requirements String  // JSON
+  rewardXp     Int     @default(50)
+  rewardGold   Int     @default(10)
+  rewardItems  String  // JSON array of item IDs
+}
+
+model NPC {
+  id           Int    @id @default(autoincrement())
+  name         String
+  role         String
+  posX         Float
+  posY         Float
+  zone         String
+  behaviorType String @default("idle") // idle, wander, guard, merchant
+}
+
+model Event {
+  id        Int      @id @default(autoincrement())
+  type      String
+  scope     String   @default("global") // global, village_A, village_B
+  startTime DateTime @default(now())
+  endTime   DateTime?
+  payload   String   // JSON
+}
+
+model Treaty {
+  id                    Int       @id @default(autoincrement())
+  type                  String    // WAR | PEACE
+  partiesJson           String    // JSON: { villageA: true, villageB: false }
+  status                String    @default("PROPOSED") // PROPOSED | APPROVED_BY_POPE | ACTIVE | REJECTED
+  createdByCharacterId  Int
+  createdBy             Character @relation("TreatyProposer", fields: [createdByCharacterId], references: [id])
+  createdAt             DateTime  @default(now())
+  approvedAt            DateTime?
+}
+
+model ActionLog {
+  id         Int      @id @default(autoincrement())
+  actorType  String   // user, character, system
+  actorId    Int?
+  actor      Character? @relation(fields: [actorId], references: [id], onDelete: SetNull)
+  actionType String
+  details    String   // JSON
+  timestamp  DateTime @default(now())
+}
+
+model WorldSetting {
+  key   String @id
+  value String // JSON
+}
+
+model QuestTemplate {
+  id              Int    @id @default(autoincrement())
+  buildingName    String @unique
+  resourceName    String
+  resourceLabel   String
+  targetAmount    Int
+  gatherTime      Int    // secondi per ciclo
+  gatherYield     Int    // unità per ciclo
+  goldReward      Int
+  itemRewardName  String
+  itemRewardType  String
+  description     String
+}
+
+model CharacterInventory {
+  characterId Int       @id
+  wood        Int       @default(0)
+  stone       Int       @default(0)
+  fish        Int       @default(0)
+  herbs       Int       @default(0)
+  meat        Int       @default(0)
+  iron        Int       @default(0)
+  character   Character @relation(fields: [characterId], references: [id], onDelete: Cascade)
+}
+
+model CharacterQuest {
+  id          Int      @id @default(autoincrement())
+  characterId Int
+  templateId  Int
+  progress    Int      @default(0)
+  status      String   @default("active") // active, completed, claimed
+  character   Character @relation(fields: [characterId], references: [id], onDelete: Cascade)
+}

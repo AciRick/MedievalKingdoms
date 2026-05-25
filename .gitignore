@@ -1,0 +1,29 @@
+node_modules/
+dist/
+.env
+*.db
+*.db-journal
+.DS_Store
+Thumbs.db
+
+# Backend
+backend/.env
+backend/dev.db
+backend/dev.db-journal
+backend/node_modules/
+backend/dist/
+backend/prisma/migrations/
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+
+# Uploads (keep folder structure, ignore actual files)
+uploads/faces/*
+!uploads/faces/.gitkeep
+uploads/cries/*
+!uploads/cries/.gitkeep
+
+# IDE
+.vscode/
+.idea/
