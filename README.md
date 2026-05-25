@@ -53,11 +53,7 @@ Vite si avvia su `http://0.0.0.0:5173`.
 
 ---
 
-## Credenziali predefinite
 
-| Ruolo | Username | Password |
-|-------|----------|----------|
-| Admin | `admin`  | `admin123` (personalizzabile in `.env` con `ADMIN_PASSWORD`) |
 
 Personaggi NPC:
 - **Papa**: personaggio speciale `isPope=true`
