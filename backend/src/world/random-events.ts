@@ -15,8 +15,8 @@ interface WorldItem {
 let nextItemId = 1;
 const worldItems: Map<number, WorldItem> = new Map();
 
-const MAP_WIDTH = 72;
-const MAP_HEIGHT = 36;
+const MAP_WIDTH = 216;
+const MAP_HEIGHT = 108;
 const TILE = 32;
 
 const eventTypes = ["war", "famine", "earthquake", "cold_winter", "random_loot"] as const;
@@ -62,10 +62,10 @@ function spawnLootItems(): void {
   const count = 4 + Math.floor(Math.random() * 5);
   const now = Date.now();
 
-  const noMansX = 22 * TILE + 40;
-  const noMansW = 28 * TILE - 80;
-  const noMansY = 6 * TILE + 40;
-  const noMansH = 16 * TILE - 80;
+  const noMansX = 55 * TILE + 40;
+  const noMansW = 106 * TILE - 80;
+  const noMansY = 14 * TILE + 40;
+  const noMansH = 41 * TILE - 80;
 
   for (let i = 0; i < count; i++) {
     const tpl = itemTemplates[Math.floor(Math.random() * itemTemplates.length)];

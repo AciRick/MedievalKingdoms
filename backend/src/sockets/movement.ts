@@ -46,5 +46,13 @@ export function setupMovementHandlers(): void {
         zone: data.zone,
       });
     });
+
+    socket.on("move:cave", async (data: { characterId: number; posX: number; posY: number }) => {
+      if (socket.data.characterId !== data.characterId) return;
+      await prisma.character.update({
+        where: { id: data.characterId },
+        data: { cavePosX: data.posX, cavePosY: data.posY },
+      });
+    });
   });
 }

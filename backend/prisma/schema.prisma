@@ -37,6 +37,11 @@ model Character {
   posX               Float             @default(0)
   posY               Float             @default(0)
   zone               String            @default("VillageA")
+  inCave             Boolean           @default(false)
+  cavePosX           Float?
+  cavePosY           Float?
+  exitPosX           Float?
+  exitPosY           Float?
   gold               Int               @default(0)
   strength           Int               @default(3)
   agility            Int               @default(3)

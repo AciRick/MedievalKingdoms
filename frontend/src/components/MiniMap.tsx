@@ -1,8 +1,8 @@
 import { useRef, useEffect, useState } from "react";
 import { useAuthStore } from "../auth/store";
 
-const MAP_W = 2304;
-const MAP_H = 1152;
+const MAP_W = 6912;
+const MAP_H = 3456;
 const CANVAS_W = 140;
 const CANVAS_H = 100;
 
@@ -59,12 +59,15 @@ export default function MiniMap() {
     const scaleY = (y: number) => (y / MAP_H) * CANVAS_H;
 
     const zones = [
-      { name: "VillageA", x: 0, y: 192, w: 704, h: 512, color: "#4a7c59" },
-      { name: "VillageB", x: 1600, y: 192, w: 704, h: 512, color: "#5a6b8a" },
-      { name: "NoMansLand", x: 704, y: 192, w: 896, h: 512, color: "#6b5b3a" },
-      { name: "Abbey", x: 640, y: 0, w: 640, h: 192, color: "#8a7a9a" },
-      { name: "Forest", x: 0, y: 704, w: 1152, h: 448, color: "#2d5a27" },
-      { name: "Coast", x: 1152, y: 704, w: 1152, h: 448, color: "#3a6b8a" },
+      { name: "Abbey", x: 2240, y: 0, w: 2432, h: 448, color: "#8a7a9a" },
+      { name: "VillageA", x: 0, y: 448, w: 1760, h: 1312, color: "#4a7c59" },
+      { name: "VillageB", x: 5152, y: 448, w: 1760, h: 1312, color: "#5a6b8a" },
+      { name: "NoMansLand", x: 1760, y: 448, w: 3392, h: 1312, color: "#6b5b3a" },
+      { name: "Forest", x: 0, y: 1760, w: 3200, h: 800, color: "#2d5a27" },
+      { name: "Lake", x: 3200, y: 1760, w: 960, h: 800, color: "#3a6b8a" },
+      { name: "Coast", x: 4160, y: 1760, w: 2752, h: 800, color: "#3a6b8a" },
+      { name: "DeepForest", x: 0, y: 2560, w: 3200, h: 896, color: "#1d3a17" },
+      { name: "Mountains", x: 3200, y: 2560, w: 2560, h: 896, color: "#5a4a3a" },
     ];
 
     for (const z of zones) {
@@ -78,7 +81,8 @@ export default function MiniMap() {
     }
 
     ctx.fillStyle = "#666666";
-    ctx.fillRect(scaleX(1600), scaleY(192), 2, scaleY(512));
+    ctx.fillRect(scaleX(1760), scaleY(448), 2, scaleY(1312));
+    ctx.fillRect(scaleX(5152), scaleY(448), 2, scaleY(1312));
 
     ctx.fillStyle = "#ffd700";
     ctx.beginPath();

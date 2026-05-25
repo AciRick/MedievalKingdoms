@@ -2,27 +2,31 @@ import Phaser from "phaser";
 import type { Character } from "../api/types";
 
 const TILE_SIZE = 32;
-const MAP_WIDTH = 72;
-const MAP_HEIGHT = 36;
+const MAP_WIDTH = 216;
+const MAP_HEIGHT = 108;
 
 const ZONE_GRID: { zone: string; x: number; y: number; w: number; h: number }[] = [
-  { zone: "VillageA", x: 0, y: 6, w: 22, h: 16 },
-  { zone: "VillageB", x: 50, y: 6, w: 22, h: 16 },
-  { zone: "NoMansLand", x: 22, y: 6, w: 28, h: 16 },
-  { zone: "Abbey", x: 20, y: 0, w: 20, h: 6 },
-  { zone: "Forest", x: 0, y: 22, w: 36, h: 14 },
-  { zone: "Coast", x: 36, y: 22, w: 36, h: 14 },
+  { zone: "Abbey", x: 70, y: 0, w: 76, h: 14 },
+  { zone: "VillageA", x: 0, y: 14, w: 55, h: 41 },
+  { zone: "VillageB", x: 161, y: 14, w: 55, h: 41 },
+  { zone: "NoMansLand", x: 55, y: 14, w: 106, h: 41 },
+  { zone: "Forest", x: 0, y: 55, w: 100, h: 25 },
+  { zone: "Lake", x: 100, y: 55, w: 30, h: 25 },
+  { zone: "Coast", x: 130, y: 55, w: 86, h: 25 },
+  { zone: "DeepForest", x: 0, y: 80, w: 100, h: 28 },
+  { zone: "Mountains", x: 100, y: 80, w: 80, h: 28 },
 ];
 
 const ZONE_FLOOR_TILE: Record<string, string> = {
-  VillageA: "town_grass", VillageB: "town_grass", NoMansLand: "town_dirt",
-  Abbey: "dungeon_stone", Forest: "town_grass3", Coast: "town_water",
+  Abbey: "dungeon_stone", VillageA: "town_grass", VillageB: "town_grass",
+  NoMansLand: "town_dirt", Forest: "town_grass3", Coast: "town_water",
+  Lake: "town_water", DeepForest: "town_grass3", Mountains: "dungeon_stone",
 };
 
 const ZONE_LABELS: Record<string, string> = {
-  VillageA: "Villaggio del Nord", VillageB: "Villaggio del Sud",
-  NoMansLand: "Terra di Nessuno", Abbey: "Abbazia",
-  Forest: "Foresta Oscura", Coast: "Costa Marina",
+  Abbey: "Abbazia", VillageA: "Villaggio del Nord", VillageB: "Villaggio del Sud",
+  NoMansLand: "Terra di Nessuno", Forest: "Foresta", Coast: "Costa Marina",
+  Lake: "Lago", DeepForest: "Foresta Profonda", Mountains: "Montagne",
 };
 
 interface NpcDef {
@@ -37,24 +41,32 @@ interface EnemyDef {
 }
 
 const NPC_DATA: NpcDef[] = [
-  { x: 250, y: 300, color: 0x22cc22, label: "Mercante", dialog: "\"Benvenuto! Ho merci rare.\"", questBuildingName: "Capanna Foresta" },
-  { x: 120, y: 350, color: 0x8888ff, label: "Guardia", dialog: "\"Fermo! Ah, sei tu. Attento nella Terra di Nessuno.\"", questBuildingName: "Castello Nord" },
-  { x: 100, y: 250, color: 0xcc8844, label: "Fabbro", dialog: "\"Le mie lame sono le migliori!\"", questBuildingName: "Palazzo Sud" },
-  { x: 360, y: 320, color: 0x44cc44, label: "Oste", dialog: "\"Birra fresca! Vuoi vendermi legna?\"", shop: { buys: "wood", buyLabel: "Legna", sellPrice: 2 } },
-  { x: 200, y: 280, color: 0xcc44cc, label: "Giullare", dialog: "\"Ahah! Il re è così grasso che... ehm.\"" },
-  { x: 1700, y: 380, color: 0x44aadd, label: "Commerciante", dialog: "\"Merci del sud!\"", questBuildingName: "Tempio" },
-  { x: 1680, y: 340, color: 0xaaaaff, label: "Sacerdotessa", dialog: "\"Che la luce ti guidi.\"" },
-  { x: 1800, y: 420, color: 0x8888ff, label: "Capitano", dialog: "\"Proteggo queste mura con la vita.\"", questBuildingName: "Miniera" },
-  { x: 1920, y: 520, color: 0x44aadd, label: "Pescatore", dialog: "\"Pesce fresco!\"", questBuildingName: "Porto Comm.le", shop: { buys: "fish", buyLabel: "Pesce", sellPrice: 2 } },
+  { x: 400, y: 600, color: 0x22cc22, label: "Mercante", dialog: "\"Benvenuto! Ho merci rare.\"", questBuildingName: "Capanna Foresta" },
+  { x: 200, y: 700, color: 0x8888ff, label: "Guardia", dialog: "\"Fermo! Ah, sei tu. Attento nella Terra di Nessuno.\"", questBuildingName: "Castello Nord" },
+  { x: 180, y: 550, color: 0xcc8844, label: "Fabbro", dialog: "\"Le mie lame sono le migliori!\"", questBuildingName: "Palazzo Sud" },
+  { x: 500, y: 650, color: 0x44cc44, label: "Oste", dialog: "\"Birra fresca! Vuoi vendermi legna?\"", shop: { buys: "wood", buyLabel: "Legna", sellPrice: 2 } },
+  { x: 350, y: 580, color: 0xcc44cc, label: "Giullare", dialog: "\"Ahah! Il re è così grasso...\"" },
+  { x: 300, y: 720, color: 0x44dd44, label: "Contadina", dialog: "\"Il raccolto è stato buono quest'anno.\"", questBuildingName: "Fattoria Nord" },
+  { x: 5200, y: 700, color: 0x44aadd, label: "Commerciante", dialog: "\"Merci del sud!\"", questBuildingName: "Tempio" },
+  { x: 5150, y: 620, color: 0xaaaaff, label: "Sacerdotessa", dialog: "\"Che la luce ti guidi.\"" },
+  { x: 5400, y: 750, color: 0x8888ff, label: "Capitano", dialog: "\"Proteggo queste mura.\"", questBuildingName: "Miniera" },
+  { x: 5800, y: 900, color: 0x44aadd, label: "Pescatore", dialog: "\"Pesce fresco!\"", questBuildingName: "Porto Comm.le", shop: { buys: "fish", buyLabel: "Pesce", sellPrice: 2 } },
+  { x: 5250, y: 850, color: 0x88cc88, label: "Contadino Sud", dialog: "\"I campi del sud sono fertili.\"", questBuildingName: "Fattoria Sud" },
 ];
 
 const ENEMY_DATA: EnemyDef[] = [
-  { id: "bandit_1", x: 800, y: 400, label: "Bandito", kingdom: "HOSTILE", strength: 4, agility: 3, wanderRange: 120 },
-  { id: "bandit_2", x: 1000, y: 500, label: "Bandito", kingdom: "HOSTILE", strength: 3, agility: 4, wanderRange: 100 },
-  { id: "bandit_3", x: 1200, y: 350, label: "Bandito", kingdom: "HOSTILE", strength: 5, agility: 2, wanderRange: 130 },
-  { id: "raider_north", x: 700, y: 220, label: "Predone Nord", kingdom: "VILLAGE_A", strength: 6, agility: 3, wanderRange: 150 },
-  { id: "raider_south_1", x: 1400, y: 480, label: "Predone Sud", kingdom: "VILLAGE_B", strength: 5, agility: 4, wanderRange: 140 },
-  { id: "raider_south_2", x: 1500, y: 300, label: "Predone Sud", kingdom: "VILLAGE_B", strength: 4, agility: 5, wanderRange: 160 },
+  { id: "bandit_1", x: 2000, y: 700, label: "Bandito", kingdom: "HOSTILE", strength: 4, agility: 3, wanderRange: 200 },
+  { id: "bandit_2", x: 2600, y: 900, label: "Bandito", kingdom: "HOSTILE", strength: 3, agility: 4, wanderRange: 180 },
+  { id: "bandit_3", x: 3200, y: 650, label: "Bandito", kingdom: "HOSTILE", strength: 5, agility: 2, wanderRange: 220 },
+  { id: "bandit_4", x: 2200, y: 1100, label: "Bandito", kingdom: "HOSTILE", strength: 4, agility: 3, wanderRange: 190 },
+  { id: "raider_north", x: 1800, y: 500, label: "Predone Nord", kingdom: "VILLAGE_A", strength: 6, agility: 3, wanderRange: 250 },
+  { id: "raider_south_1", x: 4000, y: 800, label: "Predone Sud", kingdom: "VILLAGE_B", strength: 5, agility: 4, wanderRange: 240 },
+  { id: "raider_south_2", x: 4500, y: 600, label: "Predone Sud", kingdom: "VILLAGE_B", strength: 4, agility: 5, wanderRange: 260 },
+  { id: "skeleton_1", x: 2400, y: 1200, label: "Scheletro", kingdom: "HOSTILE", strength: 7, agility: 2, wanderRange: 150 },
+  { id: "wolf_1", x: 1200, y: 2000, label: "Lupo", kingdom: "HOSTILE", strength: 5, agility: 6, wanderRange: 300 },
+  { id: "wolf_2", x: 1800, y: 2200, label: "Lupo", kingdom: "HOSTILE", strength: 5, agility: 5, wanderRange: 280 },
+  { id: "bear_1", x: 2800, y: 2700, label: "Orso", kingdom: "HOSTILE", strength: 8, agility: 3, wanderRange: 200 },
+  { id: "bear_2", x: 3500, y: 2900, label: "Orso", kingdom: "HOSTILE", strength: 9, agility: 2, wanderRange: 180 },
 ];
 
 const INTERACT_DISTANCE = 60;
@@ -87,18 +99,24 @@ interface ResourceNode {
 }
 
 const BUILDING_DATA: BuildingDef[] = [
-  { x: 160, y: 320, w: 3, h: 3, label: "Castello Nord" },
-  { x: 64, y: 256, w: 2, h: 2, label: "Caserma", rest: true },
-  { x: 320, y: 352, w: 2, h: 1, label: "Taverna" },
-  { x: 96, y: 224, w: 2, h: 1, label: "Fucina" },
-  { x: 320, y: 240, w: 2, h: 2, label: "Capanna Foresta" },
-  { x: 640, y: 96, w: 3, h: 2, label: "Abbazia", rest: true, free: true },
-  { x: 1856, y: 352, w: 3, h: 3, label: "Palazzo Sud" },
-  { x: 1760, y: 256, w: 2, h: 2, label: "Tempio", rest: true },
-  { x: 2112, y: 512, w: 3, h: 2, label: "Porto Comm.le" },
-  { x: 2176, y: 384, w: 2, h: 2, label: "Miniera" },
-  { x: 1728, y: 448, w: 2, h: 1, label: "Bottega Pesce" },
-  { x: 2112, y: 880, w: 3, h: 1, label: "Molo del Porto" },
+  { x: 300, y: 640, w: 3, h: 3, label: "Castello Nord" },
+  { x: 160, y: 550, w: 2, h: 2, label: "Caserma", rest: true },
+  { x: 500, y: 700, w: 2, h: 1, label: "Taverna" },
+  { x: 200, y: 500, w: 2, h: 1, label: "Fucina" },
+  { x: 500, y: 550, w: 2, h: 2, label: "Capanna Foresta" },
+  { x: 250, y: 780, w: 2, h: 2, label: "Fattoria Nord" },
+  { x: 2100, y: 220, w: 3, h: 2, label: "Abbazia", rest: true, free: true },
+  { x: 5400, y: 700, w: 3, h: 3, label: "Palazzo Sud" },
+  { x: 5180, y: 580, w: 2, h: 2, label: "Tempio", rest: true },
+  { x: 6200, y: 900, w: 3, h: 2, label: "Porto Comm.le" },
+  { x: 6300, y: 750, w: 2, h: 2, label: "Miniera" },
+  { x: 5200, y: 850, w: 2, h: 1, label: "Bottega Pesce" },
+  { x: 5250, y: 880, w: 2, h: 2, label: "Fattoria Sud" },
+  { x: 6200, y: 2000, w: 3, h: 1, label: "Molo del Porto" },
+  { x: 4000, y: 1800, w: 2, h: 1, label: "Capanna Lago" },
+  { x: 3400, y: 2700, w: 2, h: 2, label: "Rovine" },
+  { x: 4500, y: 2800, w: 2, h: 1, label: "Miniera Montagna" },
+  { x: 5632, y: 3328, w: 2, h: 2, label: "CaveEntrance" },
 ];
 
 const RESOURCE_NODES: ResourceNode[] = [
@@ -403,35 +421,29 @@ export class WorldScene extends Phaser.Scene {
     };
 
     // ─── VillageA mura ───
-    const va_l = 0, va_r = 22, va_t = 6, va_b = 22;
+    const va_l = 0, va_r = 55, va_t = 14, va_b = 55;
     // alto
     for (let c = va_l; c < va_r; c++) this.add.image(c * TILE_SIZE + TILE_SIZE / 2, va_t * TILE_SIZE + TILE_SIZE / 2, wallKey).setDisplaySize(TILE_SIZE, TILE_SIZE).setDepth(depth);
     // basso
     for (let c = va_l; c < va_r; c++) this.add.image(c * TILE_SIZE + TILE_SIZE / 2, va_b * TILE_SIZE + TILE_SIZE / 2, wallKey).setDisplaySize(TILE_SIZE, TILE_SIZE).setDepth(depth);
-    // sinistro (no muro, bordo mappa)
-    // destro (con cancello a righe 13-14)
+    // destro (con cancello a righe 34-35)
     for (let r = va_t; r < va_b; r++) {
-      if (r >= 13 && r <= 14) continue;
+      if (r >= 34 && r <= 35) continue;
       this.add.image(va_r * TILE_SIZE + TILE_SIZE / 2, r * TILE_SIZE + TILE_SIZE / 2, wallKey).setDisplaySize(TILE_SIZE, TILE_SIZE).setDepth(depth);
     }
-    // Cancello VillageA (col 22, righe 13-14)
-    this.add.image(va_r * TILE_SIZE + TILE_SIZE / 2, 13 * TILE_SIZE + TILE_SIZE / 2, "gate_top").setDisplaySize(TILE_SIZE, TILE_SIZE).setDepth(depth);
-    this.add.image(va_r * TILE_SIZE + TILE_SIZE / 2, 14 * TILE_SIZE + TILE_SIZE / 2, "gate_bot").setDisplaySize(TILE_SIZE, TILE_SIZE).setDepth(depth);
+    this.add.image(va_r * TILE_SIZE + TILE_SIZE / 2, 34 * TILE_SIZE + TILE_SIZE / 2, "gate_top").setDisplaySize(TILE_SIZE, TILE_SIZE).setDepth(depth);
+    this.add.image(va_r * TILE_SIZE + TILE_SIZE / 2, 35 * TILE_SIZE + TILE_SIZE / 2, "gate_bot").setDisplaySize(TILE_SIZE, TILE_SIZE).setDepth(depth);
 
     // ─── VillageB mura ───
-    const vb_l = 50, vb_r = 72, vb_t = 6, vb_b = 22;
-    // alto
+    const vb_l = 161, vb_r = 216, vb_t = 14, vb_b = 55;
     for (let c = vb_l; c < vb_r; c++) this.add.image(c * TILE_SIZE + TILE_SIZE / 2, vb_t * TILE_SIZE + TILE_SIZE / 2, wallKey).setDisplaySize(TILE_SIZE, TILE_SIZE).setDepth(depth);
-    // basso
     for (let c = vb_l; c < vb_r; c++) this.add.image(c * TILE_SIZE + TILE_SIZE / 2, vb_b * TILE_SIZE + TILE_SIZE / 2, wallKey).setDisplaySize(TILE_SIZE, TILE_SIZE).setDepth(depth);
-    // sinistro (con cancello a righe 13-14)
     for (let r = vb_t; r < vb_b; r++) {
-      if (r >= 13 && r <= 14) continue;
+      if (r >= 34 && r <= 35) continue;
       this.add.image(vb_l * TILE_SIZE + TILE_SIZE / 2, r * TILE_SIZE + TILE_SIZE / 2, wallKey).setDisplaySize(TILE_SIZE, TILE_SIZE).setDepth(depth);
     }
-    // Cancello VillageB (col 50, righe 13-14)
-    this.add.image(vb_l * TILE_SIZE + TILE_SIZE / 2, 13 * TILE_SIZE + TILE_SIZE / 2, "gate_top").setDisplaySize(TILE_SIZE, TILE_SIZE).setDepth(depth);
-    this.add.image(vb_l * TILE_SIZE + TILE_SIZE / 2, 14 * TILE_SIZE + TILE_SIZE / 2, "gate_bot").setDisplaySize(TILE_SIZE, TILE_SIZE).setDepth(depth);
+    this.add.image(vb_l * TILE_SIZE + TILE_SIZE / 2, 34 * TILE_SIZE + TILE_SIZE / 2, "gate_top").setDisplaySize(TILE_SIZE, TILE_SIZE).setDepth(depth);
+    this.add.image(vb_l * TILE_SIZE + TILE_SIZE / 2, 35 * TILE_SIZE + TILE_SIZE / 2, "gate_bot").setDisplaySize(TILE_SIZE, TILE_SIZE).setDepth(depth);
   }
 
   private drawBuildings(): void {
@@ -632,7 +644,9 @@ export class WorldScene extends Phaser.Scene {
       const cx = bld.x + (bld.w * TILE_SIZE) / 2, cy = bld.y + (bld.h * TILE_SIZE) / 2;
       if (Phaser.Math.Distance.Between(px, py, cx, cy) <= INTERACT_DISTANCE + Math.max(bld.w, bld.h) * TILE_SIZE / 2) {
         this.lastInteractTime = now;
-        if (bld.rest) {
+        if (bld.label === "CaveEntrance") {
+          window.dispatchEvent(new CustomEvent("phaser:interact-cave"));
+        } else if (bld.rest) {
           window.dispatchEvent(new CustomEvent("phaser:interact-rest", { detail: { label: bld.label, free: bld.free || false } }));
         } else {
           window.dispatchEvent(new CustomEvent("phaser:interact-building", { detail: { label: bld.label } }));

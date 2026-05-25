@@ -236,9 +236,23 @@ router.post("/pve", requireUser, async (req: Request, res: Response): Promise<vo
       bandit_1: { name: "Bandito", hp: 30, strength: 4, agility: 3, xpReward: 15, goldReward: 20 },
       bandit_2: { name: "Bandito", hp: 35, strength: 5, agility: 2, xpReward: 18, goldReward: 25 },
       bandit_3: { name: "Bandito", hp: 25, strength: 3, agility: 4, xpReward: 12, goldReward: 15 },
+      bandit_4: { name: "Bandito", hp: 32, strength: 4, agility: 3, xpReward: 16, goldReward: 22 },
       raider_north: { name: "Predone del Nord", hp: 40, strength: 6, agility: 3, xpReward: 25, goldReward: 35 },
       raider_south_1: { name: "Predone del Sud", hp: 40, strength: 5, agility: 4, xpReward: 25, goldReward: 35 },
       raider_south_2: { name: "Predone del Sud", hp: 38, strength: 4, agility: 5, xpReward: 22, goldReward: 30 },
+      skeleton_1: { name: "Scheletro", hp: 50, strength: 7, agility: 2, xpReward: 35, goldReward: 50 },
+      wolf_1: { name: "Lupo", hp: 35, strength: 5, agility: 6, xpReward: 28, goldReward: 30 },
+      wolf_2: { name: "Lupo", hp: 35, strength: 5, agility: 5, xpReward: 26, goldReward: 28 },
+      bear_1: { name: "Orso", hp: 70, strength: 8, agility: 3, xpReward: 50, goldReward: 70 },
+      bear_2: { name: "Orso", hp: 80, strength: 9, agility: 2, xpReward: 60, goldReward: 80 },
+      cave_skeleton_1: { name: "Scheletro Oscuro", hp: 55, strength: 5, agility: 2, xpReward: 40, goldReward: 45 },
+      cave_skeleton_2: { name: "Scheletro Oscuro", hp: 55, strength: 5, agility: 3, xpReward: 42, goldReward: 48 },
+      cave_skeleton_3: { name: "Scheletro Oscuro", hp: 60, strength: 6, agility: 2, xpReward: 45, goldReward: 55 },
+      cave_bat_1: { name: "Pipistrello", hp: 20, strength: 3, agility: 7, xpReward: 18, goldReward: 15 },
+      cave_bat_2: { name: "Pipistrello", hp: 20, strength: 3, agility: 6, xpReward: 16, goldReward: 14 },
+      cave_bat_3: { name: "Pipistrello", hp: 20, strength: 3, agility: 6, xpReward: 16, goldReward: 14 },
+      cave_spider_1: { name: "Ragno Gigante", hp: 65, strength: 7, agility: 3, xpReward: 55, goldReward: 60 },
+      cave_spider_2: { name: "Ragno Gigante", hp: 60, strength: 6, agility: 4, xpReward: 50, goldReward: 55 },
     };
     const enemy = enemyStats[enemyId];
     if (!enemy) {

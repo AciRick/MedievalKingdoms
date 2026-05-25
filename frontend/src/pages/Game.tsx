@@ -184,12 +184,13 @@ export default function Game() {
     let game: Phaser.Game | null = null;
 
     import("../scenes/WorldScene").then(({ WorldScene }) => {
+      import("../scenes/CaveScene").then(({ CaveScene }) => {
       import("phaser").then((Phaser) => {
         if (gameRef.current) return;
         const config: Phaser.Types.Core.GameConfig = {
           type: Phaser.AUTO, width: window.innerWidth, height: window.innerHeight,
           parent: "game-container", backgroundColor: "#1a1a2e", pixelArt: true,
-          scene: [WorldScene], input: { keyboard: true },
+          scene: [WorldScene, CaveScene], input: { keyboard: true },
           physics: { default: "arcade", arcade: { gravity: { x: 0, y: 0 }, debug: false } },
           scale: { mode: Phaser.Scale.RESIZE, autoCenter: Phaser.Scale.CENTER_BOTH },
         };
@@ -214,6 +215,7 @@ export default function Game() {
           }
         });
       });
+    });
     });
 
     const onInteractNpc = (e: Event) => {
@@ -243,6 +245,35 @@ export default function Game() {
       setCombat(d);
     };
 
+    const onCaveAttack = (e: Event) => {
+      const d = (e as CustomEvent).detail as { enemyId: string; enemyName: string; enemyX: number; enemyY: number };
+      setCombat(d);
+    };
+
+    const onCaveExit = async () => {
+      if (!selectedCharacter) return;
+      try {
+        const r = await api.caveExit(selectedCharacter.id);
+        const ws = gameRef.current!.scene.getScene("WorldScene") as any;
+        gameRef.current!.scene.stop("CaveScene");
+        gameRef.current!.scene.start("WorldScene");
+        if (ws?.playerSprite) { ws.playerSprite.x = r.posX; ws.playerSprite.y = r.posY; }
+        const updated = await api.getCharacter(selectedCharacter.id);
+        useAuthStore.getState().setSelectedCharacter(updated);
+      } catch {}
+    };
+
+    const onInteractCave = async () => {
+      if (!selectedCharacter) return;
+      try {
+        await api.caveEnter(selectedCharacter.id);
+        gameRef.current!.scene.stop("WorldScene");
+        gameRef.current!.scene.start("CaveScene");
+        const cs = gameRef.current!.scene.getScene("CaveScene") as any;
+        if (cs?.setPlayerCharacter) cs.setPlayerCharacter(selectedCharacter);
+      } catch {}
+    };
+
     const onGatheringStart = (e: Event) => { setGathering((e as CustomEvent).detail as GatheringState); };
     const onGatheringComplete = (e: Event) => { const d = (e as CustomEvent).detail as { resourceName: string; resourceLabel: string; amount: number }; handleGatheringCompleteRef.current(d.resourceName, d.amount); };
     const onCollectItem = (e: Event) => { handleCollectItem((e as CustomEvent).detail.itemId); };
@@ -255,6 +286,9 @@ export default function Game() {
     window.addEventListener("phaser:gathering-start", onGatheringStart);
     window.addEventListener("phaser:gathering-complete", onGatheringComplete);
     window.addEventListener("phaser:collect-item", onCollectItem);
+    window.addEventListener("phaser:cave-attack", onCaveAttack);
+    window.addEventListener("phaser:cave-exit", onCaveExit);
+    window.addEventListener("phaser:interact-cave", onInteractCave);
 
     return () => {
       window.removeEventListener("phaser:toggle-inventory", () => {});
@@ -265,6 +299,9 @@ export default function Game() {
       window.removeEventListener("phaser:gathering-start", onGatheringStart);
       window.removeEventListener("phaser:gathering-complete", onGatheringComplete);
       window.removeEventListener("phaser:collect-item", onCollectItem);
+      window.removeEventListener("phaser:cave-attack", onCaveAttack);
+      window.removeEventListener("phaser:cave-exit", onCaveExit);
+      window.removeEventListener("phaser:interact-cave", onInteractCave);
       if (game) { game.destroy(true); gameRef.current = null; }
     };
   }, [user, selectedCharacter, navigate, loadInventory, handleCombatComplete, handleCollectItem, closeAll]);

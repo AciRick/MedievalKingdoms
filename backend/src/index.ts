@@ -21,6 +21,7 @@ import questRoutes from "./quests/routes";
 import inventoryRoutes from "./inventory/routes";
 import shopRoutes from "./shop/routes";
 import restRoutes from "./rest/routes";
+import caveRoutes from "./cave/routes";
 import { startRandomEvents, getWorldItems, collectItem } from "./world/random-events";
 
 const app = express();
@@ -68,6 +69,7 @@ app.use("/api/quests", questRoutes);
 app.use("/api/inventory", inventoryRoutes);
 app.use("/api/shop", shopRoutes);
 app.use("/api/rest", restRoutes);
+app.use("/api/cave", caveRoutes);
 
 // Health check
 app.get("/api/health", (_req, res) => {

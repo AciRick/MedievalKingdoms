@@ -358,4 +358,16 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ characterId }),
     }),
+
+  caveEnter: (characterId: number) =>
+    request<{ message: string; cavePosX: number; cavePosY: number }>("/cave/enter", {
+      method: "POST",
+      body: JSON.stringify({ characterId }),
+    }),
+
+  caveExit: (characterId: number) =>
+    request<{ message: string; posX: number; posY: number }>("/cave/exit", {
+      method: "POST",
+      body: JSON.stringify({ characterId }),
+    }),
 };
