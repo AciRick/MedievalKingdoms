@@ -246,8 +246,9 @@ export class WorldScene extends Phaser.Scene {
     this.customTileSprites = [];
     for (const t of tiles) {
       if (this.textures.exists(t.key)) {
-        const img = this.add.image(t.col * TILE_SIZE + TILE_SIZE / 2, t.row * TILE_SIZE + TILE_SIZE / 2, t.key);
-        img.setDisplaySize(TILE_SIZE, TILE_SIZE).setDepth(6);
+        const img = this.add.image(t.col * TILE_SIZE, t.row * TILE_SIZE, t.key);
+        img.setOrigin(0, 0);
+        img.setDisplaySize(TILE_SIZE, TILE_SIZE).setDepth(12);
         this.customTileSprites.push(img);
       }
     }
