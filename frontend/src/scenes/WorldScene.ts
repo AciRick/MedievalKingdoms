@@ -133,27 +133,11 @@ export class WorldScene extends Phaser.Scene {
   constructor() { super({ key: "WorldScene" }); }
 
   preload(): void {
-    this.load.image("town_0000", "/assets/tiles/kenney-tiny-town/tile_0000.png");
-    this.load.image("town_0001", "/assets/tiles/kenney-tiny-town/tile_0001.png");
-    this.load.image("town_0002", "/assets/tiles/kenney-tiny-town/tile_0002.png");
-    this.load.image("town_0003", "/assets/tiles/kenney-tiny-town/tile_0003.png");
-    this.load.image("town_0004", "/assets/tiles/kenney-tiny-town/tile_0004.png");
-    this.load.image("town_0005", "/assets/tiles/kenney-tiny-town/tile_0005.png");
-    this.load.image("town_0012", "/assets/tiles/kenney-tiny-town/tile_0012.png");
-    this.load.image("town_0024", "/assets/tiles/kenney-tiny-town/tile_0024.png");
-    this.load.image("town_0048", "/assets/tiles/kenney-tiny-town/tile_0048.png");
-    this.load.image("town_0052", "/assets/tiles/kenney-tiny-town/tile_0052.png");
-    this.load.image("town_0113", "/assets/tiles/kenney-tiny-town/tile_10113.png");
-    this.load.image("town_0114", "/assets/tiles/kenney-tiny-town/tile_10114.png");
-    this.load.image("dung_0000", "/assets/tiles/kenney-tiny-dungeon/tile_0000.png");
-    this.load.image("dung_0002", "/assets/tiles/kenney-tiny-dungeon/tile_0002.png");
-    this.load.image("dung_0012", "/assets/tiles/kenney-tiny-dungeon/tile_0012.png");
-    this.load.image("dung_0019", "/assets/tiles/kenney-tiny-dungeon/tile_0019.png");
-    this.load.image("dung_0024", "/assets/tiles/kenney-tiny-dungeon/tile_0024.png");
-    this.load.image("dung_0028", "/assets/tiles/kenney-tiny-dungeon/tile_0028.png");
-    this.load.image("dung_0029", "/assets/tiles/kenney-tiny-dungeon/tile_0029.png");
-    this.load.image("dung_0040", "/assets/tiles/kenney-tiny-dungeon/tile_0040.png");
-    this.load.image("dung_0048", "/assets/tiles/kenney-tiny-dungeon/tile_0048.png");
+    for (let i = 0; i <= 131; i++) {
+      const n = String(i).padStart(4, "0");
+      this.load.image(`town_${n}`, `/assets/tiles/kenney-tiny-town/tile_${n}.png`);
+      this.load.image(`dung_${n}`, `/assets/tiles/kenney-tiny-dungeon/tile_${n}.png`);
+    }
     this.load.image("rpg_0198", "/assets/tiles/kenney-rpg-urban/tile_0198.png");
   }
 

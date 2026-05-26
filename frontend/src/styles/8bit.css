@@ -1006,6 +1006,18 @@ button.success:hover {
   gap: 1px;
 }
 
+.editor-palette-bar {
+  display: flex;
+  gap: 2px;
+  padding: 4px 6px;
+  background: #111;
+  border-top: 1px solid #333;
+  overflow-x: auto;
+  align-items: center;
+  min-height: 50px;
+  flex-shrink: 0;
+}
+
 /* ─── Quest Offer Panel ───────────────────────────────────────────────────── */
 
 .quest-details {

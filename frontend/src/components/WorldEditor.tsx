@@ -206,34 +206,31 @@ export default function WorldEditor({ tiles, onSave, onClose }: Props) {
     return (
       <div className="modal-overlay" onClick={onClose} style={{ zIndex: 300 }}>
         <div style={{ background: "#0f0f1a", border: "2px solid #c9a44b", padding: 8, width: "100vw", height: "100vh", display: "flex", flexDirection: "column", gap: 6 }} onClick={e => e.stopPropagation()}>
-          <div style={{ display: "flex", gap: 8, alignItems: "center", flexShrink: 0 }}>
-            <button onClick={() => setMode("overview")} style={{ fontSize: 7 }}>◀ TORNA</button>
-            <span style={{ color: "#c9a44b", fontSize: 8 }}>Sezione ({section.cx},{section.cy}) — {editTiles.length} tile custom</span>
-            <div style={{ flex: 1 }} />
-            <button onClick={() => { addVersion("Salvato", editTiles); onSave(editTiles); }} style={{ fontSize: 7 }}>💾 SALVA</button>
-            <button className="danger" style={{ fontSize: 7 }} onClick={() => { if (versions.length > 0) setEditTiles(versions[versions.length - 1].tiles); }}>↩ RIPRISTINA</button>
-          </div>
+        {/* Toolbar */}
+        <div className="editor-toolbar">
+          <button onClick={() => setMode("overview")} style={{ fontSize: 7, marginRight: 8 }}>◀ TORNA</button>
+          <span style={{ color: "#c9a44b", fontSize: 8 }}>Sezione ({section.cx},{section.cy}) — {editTiles.length} tile</span>
+          <div style={{ flex: 1 }} />
+          <button style={{ fontSize: 7 }} onClick={() => { addVersion("Salvato", editTiles); onSave(editTiles); }}>💾 SALVA</button>
+          <button className="danger" style={{ fontSize: 7, marginLeft: 4 }} onClick={() => { if (versions.length > 0) setEditTiles(versions[versions.length - 1].tiles); }}>↩ RIPRISTINA</button>
+        </div>
           <div style={{ display: "flex", gap: 6, flex: 1, overflow: "hidden" }}>
-            <div style={{ width: 100, flexShrink: 0, display: "flex", flexDirection: "column", gap: 2 }}>
-              <div onClick={() => setSelectedTile("__eraser")}
-                style={{ border: selectedTile === "__eraser" ? "2px solid #ff3333" : "1px solid #333", height: 50, display: "flex", alignItems: "center", justifyContent: "center", background: "#331111", cursor: "pointer", flexShrink: 0 }}>
-                <span style={{ fontSize: 20 }}>🧹 CANCELLA</span>
-              </div>
-              <div style={{ flex: 1, overflowY: "auto", background: "#111", border: "1px solid #333", padding: 3 }}>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 1 }}>
-                  {ALL_TILES.map(t => (
-                    <div key={t.key} onClick={() => setSelectedTile(t.key)}
-                      style={{ border: selectedTile === t.key ? "2px solid #c9a44b" : "1px solid #333", width: 46, height: 46, display: "flex", alignItems: "center", justifyContent: "center", background: "#1a1a2e", cursor: "pointer" }}>
-                      <img src={t.src} alt="" style={{ width: 32, height: 32, imageRendering: "pixelated" }} />
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
             <div style={{ flex: 1, overflow: "auto", background: "#060610", display: "flex", justifyContent: "center", alignItems: "flex-start", padding: 16 }}>
               {renderTileGrid(startCol, startRow, CHUNK_W, CHUNK_H)}
             </div>
             <Sidebar versions={versions} editTiles={editTiles} setEditTiles={setEditTiles} onClose={onClose} />
+          </div>
+          <div className="editor-palette-bar">
+            <div onClick={() => setSelectedTile("__eraser")}
+              style={{ border: selectedTile === "__eraser" ? "2px solid #ff3333" : "1px solid #333", width: 40, height: 40, display: "flex", alignItems: "center", justifyContent: "center", background: "#331111", cursor: "pointer", flexShrink: 0 }}>
+              <span style={{ fontSize: 16 }}>🧹</span>
+            </div>
+            {ALL_TILES.map(t => (
+              <div key={t.key} onClick={() => setSelectedTile(t.key)}
+                style={{ border: selectedTile === t.key ? "2px solid #c9a44b" : "1px solid #333", width: 40, height: 40, display: "flex", alignItems: "center", justifyContent: "center", background: "#1a1a2e", cursor: "pointer", flexShrink: 0 }}>
+                <img src={t.src} alt="" style={{ width: 32, height: 32, imageRendering: "pixelated" }} />
+              </div>
+            ))}
           </div>
         </div>
       </div>
@@ -257,26 +254,22 @@ export default function WorldEditor({ tiles, onSave, onClose }: Props) {
             <button className="danger" style={{ fontSize: 7 }} onClick={() => { if (versions.length > 0) setEditTiles(versions[versions.length - 1].tiles); }}>↩ RIPRISTINA</button>
           </div>
           <div style={{ display: "flex", gap: 6, flex: 1, overflow: "hidden" }}>
-            <div style={{ width: 100, flexShrink: 0, display: "flex", flexDirection: "column", gap: 2 }}>
-              <div onClick={() => setSelectedTile("__eraser")}
-                style={{ border: selectedTile === "__eraser" ? "2px solid #ff3333" : "1px solid #333", height: 50, display: "flex", alignItems: "center", justifyContent: "center", background: "#331111", cursor: "pointer", flexShrink: 0 }}>
-                <span style={{ fontSize: 20 }}>🧹 CANCELLA</span>
-              </div>
-              <div style={{ flex: 1, overflowY: "auto", background: "#111", border: "1px solid #333", padding: 3 }}>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 1 }}>
-                  {ALL_TILES.map(t => (
-                    <div key={t.key} onClick={() => setSelectedTile(t.key)}
-                      style={{ border: selectedTile === t.key ? "2px solid #c9a44b" : "1px solid #333", width: 46, height: 46, display: "flex", alignItems: "center", justifyContent: "center", background: "#1a1a2e", cursor: "pointer" }}>
-                      <img src={t.src} alt="" style={{ width: 32, height: 32, imageRendering: "pixelated" }} />
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
             <div ref={zoneScrollRef} onWheel={handleWheel} style={{ flex: 1, overflow: "auto", background: "#060610", display: "flex", justifyContent: "center", alignItems: "flex-start", padding: 16 }}>
               {renderTileGrid(zone.x, zone.y, zone.w, zone.h)}
             </div>
             <Sidebar versions={versions} editTiles={editTiles} setEditTiles={setEditTiles} onClose={onClose} />
+          </div>
+          <div className="editor-palette-bar">
+            <div onClick={() => setSelectedTile("__eraser")}
+              style={{ border: selectedTile === "__eraser" ? "2px solid #ff3333" : "1px solid #333", width: 40, height: 40, display: "flex", alignItems: "center", justifyContent: "center", background: "#331111", cursor: "pointer", flexShrink: 0 }}>
+              <span style={{ fontSize: 16 }}>🧹</span>
+            </div>
+            {ALL_TILES.map(t => (
+              <div key={t.key} onClick={() => setSelectedTile(t.key)}
+                style={{ border: selectedTile === t.key ? "2px solid #c9a44b" : "1px solid #333", width: 40, height: 40, display: "flex", alignItems: "center", justifyContent: "center", background: "#1a1a2e", cursor: "pointer", flexShrink: 0 }}>
+                <img src={t.src} alt="" style={{ width: 32, height: 32, imageRendering: "pixelated" }} />
+              </div>
+            ))}
           </div>
         </div>
       </div>
