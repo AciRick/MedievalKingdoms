@@ -156,10 +156,6 @@ export class WorldScene extends Phaser.Scene {
       this.load.image(`dung_${n}`, `/assets/tiles/kenney-tiny-dungeon/tile_${n}.png`);
     }
     this.load.image("rpg_0198", "/assets/tiles/kenney-rpg-urban/tile_0198.png");
-    for (let i = 0; i <= 485; i++) {
-      const n = String(i).padStart(4, "0");
-      this.load.image(`rpg_${n}`, `/assets/tiles/kenney-rpg-urban/tile_${n}.png`);
-    }
 
     // Tiny Dungeon — NPC statici
     this.load.image("spr_guardia", "/assets/tiles/kenney-tiny-dungeon/tile_0097.png");
@@ -342,7 +338,8 @@ export class WorldScene extends Phaser.Scene {
     let rendered = 0;
     for (const t of tiles) {
       if (this.textures.exists(t.key)) {
-        const bg = this.add.rectangle(t.col * TILE_SIZE + TILE_SIZE / 2, t.row * TILE_SIZE + TILE_SIZE / 2, TILE_SIZE + 2, TILE_SIZE + 2, 0x000000);
+        const zoneColor = this.getZoneColor(t.col, t.row);
+        const bg = this.add.rectangle(t.col * TILE_SIZE + TILE_SIZE / 2, t.row * TILE_SIZE + TILE_SIZE / 2, TILE_SIZE + 2, TILE_SIZE + 2, zoneColor);
         bg.setDepth(5.1);
         this.customTileSprites.push(bg as any);
         const img = this.add.image(t.col * TILE_SIZE + TILE_SIZE / 2, t.row * TILE_SIZE + TILE_SIZE / 2, t.key);
@@ -625,6 +622,16 @@ export class WorldScene extends Phaser.Scene {
     if (row === 14 && col >= 161 && col <= 215) return true;
     if (row === 55 && col >= 161 && col <= 215) return true;
     return false;
+  }
+
+  getZoneColor(col: number, row: number): number {
+    const zone = this.getZoneAt(col * TILE_SIZE + TILE_SIZE / 2, row * TILE_SIZE + TILE_SIZE / 2);
+    const colors: Record<string, number> = {
+      VillageA: 0x4a7c59, VillageB: 0x5a6b8a, NoMansLand: 0x6b5b3a,
+      Abbey: 0x8a7a9a, Forest: 0x2d5a27, DeepForest: 0x1d3a17,
+      Coast: 0x3a6b8a, Lake: 0x4a8a9a, Mountains: 0x5a4a3a,
+    };
+    return colors[zone] || 0x333333;
   }
 
   private generateCharacterTextures(): void {
