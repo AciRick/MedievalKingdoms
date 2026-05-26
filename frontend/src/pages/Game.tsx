@@ -262,6 +262,7 @@ export default function Game() {
       const d = (e as CustomEvent).detail as { label: string };
       const tpl = questTemplatesRef.current.find((q) => q.buildingName === d.label);
       if (tpl) { const a = activeQuestsRef.current.some((aq) => aq.templateId === tpl.id && (aq.status === "active" || aq.status === "completed")); if (a) { setOverlayMessage("Hai già questa quest!"); if (overlayTimer.current) clearTimeout(overlayTimer.current); overlayTimer.current = setTimeout(() => setOverlayMessage(null), 3000); } else { setQuestOffer(tpl); } }
+      else { setOverlayMessage(`Nessuna quest disponibile presso ${d.label}`); if (overlayTimer.current) clearTimeout(overlayTimer.current); overlayTimer.current = setTimeout(() => setOverlayMessage(null), 3000); }
     };
 
     const onInteractRest = (e: Event) => { setRestDialog((e as CustomEvent).detail as RestDialog); };
