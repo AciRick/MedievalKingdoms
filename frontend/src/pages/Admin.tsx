@@ -14,6 +14,18 @@ interface ZoneRow {
 }
 interface Spell { id: number; name: string; description: string; manaCost: number; }
 
+function BackupPreview({ tiles }: { tiles: { col: number; row: number; key: string }[] }) {
+  const ref = useRef<HTMLCanvasElement>(null);
+  useEffect(() => {
+    const c = ref.current; if (!c) return;
+    const ctx = c.getContext("2d"); if (!ctx) return;
+    ctx.fillStyle = "#0a0a14"; ctx.fillRect(0, 0, 108, 27);
+    ctx.fillStyle = "#ffcc00";
+    for (const t of tiles) ctx.fillRect(Math.floor(t.col / 2), Math.floor(t.row / 4), 1, 1);
+  }, [tiles]);
+  return <canvas ref={ref} width={108} height={27} style={{ width: 108, height: 27, border: "1px solid #333", flexShrink: 0 }} />;
+}
+
 export default function Admin() {
   const navigate = useNavigate();
   const [password, setPassword] = useState("");
@@ -81,6 +93,8 @@ export default function Admin() {
       setMagicEnabled(magic.enabled);
       setSpells(magic.spells);
       setCustomTiles(Array.isArray(ct) ? ct : []);
+      await loadBackups();
+      await loadNpcPositions();
     } catch { /* ignore */ }
   };
 
@@ -219,7 +233,7 @@ export default function Admin() {
     try {
       const b = await api.getCustomTileBackups(password);
       setBackups(b);
-    } catch {}
+    } catch (err) { console.error("loadBackups error:", err); }
   };
 
   const handleRestoreBackup = async (key: string) => {
@@ -234,7 +248,7 @@ export default function Admin() {
     try {
       const p = await api.getNpcPositions(password);
       setNpcPositions(p);
-    } catch {}
+    } catch (err) { console.error("loadNpcPositions error:", err); }
   };
 
   const handleSaveNpcPosition = async () => {
@@ -356,8 +370,11 @@ export default function Admin() {
           <button onClick={loadBackups} style={{ width: "100%", fontSize: 7, marginBottom: 4 }}>CARICA BACKUP</button>
           {backups.length === 0 && <p style={{ fontSize: 6, color: "#8888aa" }}>Nessun backup trovato</p>}
           {backups.map(b => (
-            <div key={b.key} className="list-item" style={{ fontSize: 6 }}>
-              <span>{new Date(b.timestamp).toLocaleString()} — {b.tiles.length} tile</span>
+            <div key={b.key} className="list-item" style={{ fontSize: 6, flexWrap: "wrap", alignItems: "flex-start", gap: 4 }}>
+              <BackupPreview tiles={b.tiles} />
+              <div style={{ flex: 1, minWidth: 120 }}>
+                <span>{new Date(b.timestamp).toLocaleString()} — {b.tiles.length} tile</span>
+              </div>
               <button className="admin-mini-btn edit" onClick={() => handleRestoreBackup(b.key)}>RIPRISTINA</button>
             </div>
           ))}
