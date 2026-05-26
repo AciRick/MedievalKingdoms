@@ -246,12 +246,13 @@ export class WorldScene extends Phaser.Scene {
     let needLoad = false;
     for (const t of tiles) {
       if (!this.textures.exists(t.key)) {
-        const parts = t.key.split("_");
-        const num = parts[1] || "";
+        const m = t.key.match(/^(\w+)_[a-zA-Z]*(\d+)/);
+        const pack = m?.[1] || "";
+        const num = m?.[2] || "";
         let path = "";
-        if (t.key.startsWith("town_")) path = `/assets/tiles/kenney-tiny-town/tile_${num}.png`;
-        else if (t.key.startsWith("dung_")) path = `/assets/tiles/kenney-tiny-dungeon/tile_${num}.png`;
-        else if (t.key.startsWith("rpg_")) path = `/assets/tiles/kenney-rpg-urban/tile_${num}.png`;
+        if (pack === "town") path = `/assets/tiles/kenney-tiny-town/tile_${num}.png`;
+        else if (pack === "dung") path = `/assets/tiles/kenney-tiny-dungeon/tile_${num}.png`;
+        else if (pack === "rpg") path = `/assets/tiles/kenney-rpg-urban/tile_${num}.png`;
         if (path) { this.load.image(t.key, path); needLoad = true; }
       }
     }
@@ -269,12 +270,9 @@ export class WorldScene extends Phaser.Scene {
     let rendered = 0;
     for (const t of tiles) {
       if (this.textures.exists(t.key)) {
-        const bg = this.add.rectangle(t.col * TILE_SIZE + TILE_SIZE / 2, t.row * TILE_SIZE + TILE_SIZE / 2, TILE_SIZE, TILE_SIZE, 0x000000);
-        bg.setDepth(5.5);
-        this.customTileSprites.push(bg as any);
         const img = this.add.image(t.col * TILE_SIZE + TILE_SIZE / 2, t.row * TILE_SIZE + TILE_SIZE / 2, t.key);
         img.setDisplaySize(TILE_SIZE, TILE_SIZE).setDepth(6);
-        this.customTileSprites.push(img as any);
+        this.customTileSprites.push(img);
         rendered++;
       }
     }
