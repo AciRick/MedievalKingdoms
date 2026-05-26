@@ -14,6 +14,8 @@ const defaultTemplates = [
   { buildingName: "Porto Comm.le", resourceName: "fish", resourceLabel: "Pesce", targetAmount: 25, gatherTime: 3, gatherYield: 2, goldReward: 180, itemRewardName: "Amo d'Oro", itemRewardType: "TALISMAN", description: "Pesca 25 pesci per il Porto Commerciale. Interagisci con l'acqua della Costa." },
   { buildingName: "Tempio", resourceName: "herbs", resourceLabel: "Erbe", targetAmount: 20, gatherTime: 4, gatherYield: 2, goldReward: 140, itemRewardName: "Veste Sacra", itemRewardType: "ARMOR", description: "Raccogli 20 erbe per il Tempio del Sud. Interagisci con i cespugli della Foresta." },
   { buildingName: "Miniera", resourceName: "iron", resourceLabel: "Ferro", targetAmount: 15, gatherTime: 6, gatherYield: 1, goldReward: 250, itemRewardName: "Scudo di Ferro", itemRewardType: "ARMOR", description: "Estrai 15 unità di ferro dalla Miniera del Sud. Interagisci con i minerali nella Terra di Nessuno." },
+  { buildingName: "Fattoria Nord", resourceName: "wood", resourceLabel: "Legna", targetAmount: 30, gatherTime: 4, gatherYield: 2, goldReward: 80, itemRewardName: "Cappello di Paglia", itemRewardType: "ARMOR", description: "Aiuta la Fattoria del Nord raccogliendo 30 unità di legna nella Foresta." },
+  { buildingName: "Fattoria Sud", resourceName: "stone", resourceLabel: "Pietra", targetAmount: 25, gatherTime: 5, gatherYield: 2, goldReward: 90, itemRewardName: "Zappa d'Oro", itemRewardType: "WEAPON", description: "Aiuta la Fattoria del Sud raccogliendo 25 unità di pietra nella Terra di Nessuno." },
 ];
 
 async function ensureTemplates(): Promise<void> {

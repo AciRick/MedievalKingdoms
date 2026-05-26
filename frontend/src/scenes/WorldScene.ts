@@ -35,10 +35,11 @@ interface EnemyDef { id: string; x: number; y: number; label: string; kingdom: s
 const NPC_DATA: NpcDef[] = [
   { x: 400, y: 600, color: 0x22cc22, label: "Mercante", dialog: "\"Benvenuto! Ho merci rare.\"", questBuildingName: "Capanna Foresta" },
   { x: 200, y: 700, color: 0x8888ff, label: "Guardia", dialog: "\"Fermo! Ah, sei tu. Attento nella Terra di Nessuno.\"", questBuildingName: "Castello Nord" },
-  { x: 180, y: 550, color: 0xcc8844, label: "Fabbro", dialog: "\"Le mie lame sono le migliori!\"", questBuildingName: "Palazzo Sud" },
+  { x: 180, y: 550, color: 0xcc8844, label: "Fabbro", dialog: "\"Le mie lame sono le migliori!\"", questBuildingName: "Castello Nord" },
   { x: 500, y: 650, color: 0x44cc44, label: "Oste", dialog: "\"Birra fresca! Vuoi vendermi legna?\"", shop: { buys: "wood", buyLabel: "Legna", sellPrice: 2 } },
   { x: 350, y: 580, color: 0xcc44cc, label: "Giullare", dialog: "\"Ahah! Il re è così grasso...\"" },
   { x: 300, y: 720, color: 0x44dd44, label: "Contadina", dialog: "\"Il raccolto è stato buono quest'anno.\"", questBuildingName: "Fattoria Nord" },
+  { x: 2100, y: 280, color: 0xaaaaaa, label: "Monaco", dialog: "\"La pace sia con te, viandante. L'Abbazia ha bisogno di erbe medicinali.\"", questBuildingName: "Abbazia" },
   { x: 5200, y: 700, color: 0x44aadd, label: "Commerciante", dialog: "\"Merci del sud!\"", questBuildingName: "Tempio" },
   { x: 5150, y: 620, color: 0xaaaaff, label: "Sacerdotessa", dialog: "\"Che la luce ti guidi.\"" },
   { x: 5400, y: 750, color: 0x8888ff, label: "Capitano", dialog: "\"Proteggo queste mura.\"", questBuildingName: "Miniera" },
@@ -458,25 +459,50 @@ export class WorldScene extends Phaser.Scene {
   }
 
   private tryInteract(): void {
-    const now = this.time.now; if (now - this.lastInteractTime < INTERACT_COOLDOWN) return; if (!this.playerSprite || this.gatheringActive) return;
+    const now = this.time.now;
+    if (now - this.lastInteractTime < INTERACT_COOLDOWN) return;
+    if (!this.playerSprite || this.gatheringActive) return;
     const px = this.playerSprite.x, py = this.playerSprite.y;
+
+    let bestNpc: { def: NpcDef; dist: number } | null = null;
     for (const entry of this.npcSprites) {
-      if (Phaser.Math.Distance.Between(px, py, entry.def.x, entry.def.y) <= INTERACT_DISTANCE) {
-        this.lastInteractTime = now;
-        window.dispatchEvent(new CustomEvent("phaser:interact-npc", { detail: { name: entry.def.label, dialog: entry.def.dialog, questBuildingName: entry.def.questBuildingName, shop: entry.def.shop || null } }));
-        return;
+      const dist = Phaser.Math.Distance.Between(px, py, entry.def.x, entry.def.y);
+      if (dist <= INTERACT_DISTANCE && (!bestNpc || dist < bestNpc.dist)) {
+        bestNpc = { def: entry.def, dist };
       }
     }
+
+    let bestBld: { bld: BuildingDef; dist: number } | null = null;
     for (const bld of BUILDING_DATA) {
       const cx = bld.x + (bld.w * TILE_SIZE) / 2, cy = bld.y + (bld.h * TILE_SIZE) / 2;
-      if (Phaser.Math.Distance.Between(px, py, cx, cy) <= INTERACT_DISTANCE + Math.max(bld.w, bld.h) * TILE_SIZE / 2) {
-        this.lastInteractTime = now;
-        if (bld.label === "CaveEntrance") { window.dispatchEvent(new CustomEvent("phaser:interact-cave")); }
-        else if (bld.rest) { window.dispatchEvent(new CustomEvent("phaser:interact-rest", { detail: { label: bld.label, free: bld.free || false } })); }
-        else { window.dispatchEvent(new CustomEvent("phaser:interact-building", { detail: { label: bld.label } })); }
-        return;
+      const dist = Phaser.Math.Distance.Between(px, py, cx, cy);
+      const maxDist = INTERACT_DISTANCE + Math.max(bld.w, bld.h) * TILE_SIZE / 2;
+      if (dist <= maxDist && (!bestBld || dist < bestBld.dist)) {
+        bestBld = { bld, dist };
       }
     }
+
+    if (bestBld && (!bestNpc || bestBld.dist < bestNpc.dist)) {
+      this.lastInteractTime = now;
+      const b = bestBld.bld;
+      if (b.label === "CaveEntrance") {
+        window.dispatchEvent(new CustomEvent("phaser:interact-cave"));
+      } else if (b.rest) {
+        window.dispatchEvent(new CustomEvent("phaser:interact-rest", { detail: { label: b.label, free: b.free || false } }));
+      } else {
+        window.dispatchEvent(new CustomEvent("phaser:interact-building", { detail: { label: b.label } }));
+      }
+      return;
+    }
+
+    if (bestNpc) {
+      this.lastInteractTime = now;
+      window.dispatchEvent(new CustomEvent("phaser:interact-npc", {
+        detail: { name: bestNpc.def.label, dialog: bestNpc.def.dialog, questBuildingName: bestNpc.def.questBuildingName, shop: bestNpc.def.shop || null },
+      }));
+      return;
+    }
+
     for (const e of this.enemySprites) {
       if (Phaser.Math.Distance.Between(px, py, e.sprite.x, e.sprite.y) <= ENEMY_INTERACT_DISTANCE) {
         this.lastInteractTime = now;
