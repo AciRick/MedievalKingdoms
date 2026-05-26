@@ -243,16 +243,38 @@ export class WorldScene extends Phaser.Scene {
 
   drawCustomTiles(tiles: { col: number; row: number; key: string }[]): void {
     console.log("drawCustomTiles called:", tiles.length, "tiles");
+    let needLoad = false;
+    for (const t of tiles) {
+      if (!this.textures.exists(t.key)) {
+        const num = t.key.slice(5);
+        let path = "";
+        if (t.key.startsWith("town_")) path = `/assets/tiles/kenney-tiny-town/tile_${num}.png`;
+        else if (t.key.startsWith("dung_")) path = `/assets/tiles/kenney-tiny-dungeon/tile_${num}.png`;
+        else if (t.key.startsWith("rpg_")) path = `/assets/tiles/kenney-rpg-urban/tile_${num}.png`;
+        if (path) { this.load.image(t.key, path); needLoad = true; }
+      }
+    }
+    if (needLoad) {
+      this.load.once("complete", () => this._renderCustomTiles(tiles));
+      this.load.start();
+    } else {
+      this._renderCustomTiles(tiles);
+    }
+  }
+
+  private _renderCustomTiles(tiles: { col: number; row: number; key: string }[]): void {
     for (const s of this.customTileSprites) s.destroy();
     this.customTileSprites = [];
+    let rendered = 0;
     for (const t of tiles) {
       if (this.textures.exists(t.key)) {
         const img = this.add.image(t.col * TILE_SIZE + TILE_SIZE / 2, t.row * TILE_SIZE + TILE_SIZE / 2, t.key);
         img.setDisplaySize(TILE_SIZE, TILE_SIZE).setDepth(12);
         this.customTileSprites.push(img);
+        rendered++;
       }
     }
-    console.log("drawCustomTiles rendered:", this.customTileSprites.length, "sprites");
+    console.log("drawCustomTiles rendered:", rendered, "sprites");
   }
 
   playCombatAnimation(ex: number, ey: number, playerWon: boolean): void {
