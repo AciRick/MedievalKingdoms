@@ -246,7 +246,8 @@ export class WorldScene extends Phaser.Scene {
     let needLoad = false;
     for (const t of tiles) {
       if (!this.textures.exists(t.key)) {
-        const num = t.key.slice(5);
+        const parts = t.key.split("_");
+        const num = parts[1] || "";
         let path = "";
         if (t.key.startsWith("town_")) path = `/assets/tiles/kenney-tiny-town/tile_${num}.png`;
         else if (t.key.startsWith("dung_")) path = `/assets/tiles/kenney-tiny-dungeon/tile_${num}.png`;
@@ -269,7 +270,7 @@ export class WorldScene extends Phaser.Scene {
     for (const t of tiles) {
       if (this.textures.exists(t.key)) {
         const img = this.add.image(t.col * TILE_SIZE + TILE_SIZE / 2, t.row * TILE_SIZE + TILE_SIZE / 2, t.key);
-        img.setDisplaySize(TILE_SIZE, TILE_SIZE).setDepth(12);
+        img.setDisplaySize(TILE_SIZE, TILE_SIZE).setDepth(6);
         this.customTileSprites.push(img);
         rendered++;
       }
