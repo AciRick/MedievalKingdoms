@@ -126,6 +126,15 @@ export default function Game() {
       setOverlayMessage(`${r.message} (Precisione: ${timingScore}%)`); if (overlayTimer.current) clearTimeout(overlayTimer.current);
       overlayTimer.current = setTimeout(() => setOverlayMessage(null), 3500);
 
+      const ll = (r as any).loot;
+      if (ll?.name) {
+        setTimeout(() => {
+          setOverlayMessage(`Hai ottenuto: ${ll.name}!`);
+          if (overlayTimer.current) clearTimeout(overlayTimer.current);
+          overlayTimer.current = setTimeout(() => setOverlayMessage(null), 3000);
+        }, 2000);
+      }
+
       const scene = (gameRef.current?.scene?.getScene("WorldScene") as any);
       if (scene) scene.playCombatAnimation(c.enemyX, c.enemyY, r.playerWon);
 
@@ -168,7 +177,7 @@ export default function Game() {
   }, [npcDialog, questOffer, shopDialog, restDialog, combat, closeAll]);
 
   useEffect(() => { const s = getSocket(); if (!s) return; const h = (d: { message: string; duration: number }) => { setOverlayMessage(d.message); if (overlayTimer.current) clearTimeout(overlayTimer.current); overlayTimer.current = setTimeout(() => setOverlayMessage(null), d.duration || 6000); }; s.on("world:overlay", h); return () => { s.off("world:overlay", h); }; }, []);
-  useEffect(() => { const s = getSocket(); if (!s || !selectedCharacter) return; const h = (d: { characterId: number; winnerName: string; position: { posX: number; posY: number } }) => { if (d.characterId === selectedCharacter.id) { setOverlayMessage(`Sei stato ucciso da ${d.winnerName}!`); const sc = (gameRef.current?.scene?.getScene("WorldScene") as any); if (sc?.playerSprite) { sc.playerSprite.x = d.position.posX; sc.playerSprite.y = d.position.posY; } } }; s.on("character:died", h); return () => { s.off("character:died", h); }; }, [selectedCharacter]);
+  useEffect(() => { const s = getSocket(); if (!s || !selectedCharacter) return; const h = (d: { characterId: number; winnerName: string; position: { posX: number; posY: number } }) => { if (d.characterId === selectedCharacter.id) { setOverlayMessage(`Sei stato ucciso da ${d.winnerName}!`); const sc = (gameRef.current?.scene?.getScene("WorldScene") as any); if (sc?.playerSprite) { sc.playerSprite.x = d.position.posX; sc.playerSprite.y = d.position.posY; } loadQuests(); loadInventory(); api.getCharacter(selectedCharacter.id).then(c => useAuthStore.getState().setSelectedCharacter(c)); } }; s.on("character:died", h); return () => { s.off("character:died", h); }; }, [selectedCharacter, loadQuests, loadInventory]);
   useEffect(() => { loadQuests(); }, [loadQuests]);
   useEffect(() => { questTemplatesRef.current = questTemplates; }, [questTemplates]);
   useEffect(() => { activeQuestsRef.current = activeQuests; }, [activeQuests]);
@@ -212,11 +221,22 @@ export default function Game() {
             socket.on("item:collected", (data: { item?: { name: string } }) => { setOverlayMessage(`Hai raccolto: ${data.item?.name || "oggetto"}!`); if (overlayTimer.current) clearTimeout(overlayTimer.current); overlayTimer.current = setTimeout(() => setOverlayMessage(null), 3000); });
             socket.on("world:event", (data: any) => { if (data.type === "earthquake") { const s = game!.scene.getScene("WorldScene") as any; if (s) s.setEventState("earthquake", true); } });
             socket.on("world:event-end", () => { const s = game!.scene.getScene("WorldScene") as any; if (s) s.setEventState(null, false); });
+
+            socket.emit("world:tiles-request");
+            socket.on("world:tiles-list", (tiles: any[]) => {
+              const s = game!.scene.getScene("WorldScene") as any;
+              if (s?.drawCustomTiles) s.drawCustomTiles(tiles || []);
+            });
+            socket.on("world:tiles-updated", (data: { tiles: any[] }) => {
+              const s = game!.scene.getScene("WorldScene") as any;
+              if (s?.drawCustomTiles) s.drawCustomTiles(data.tiles || []);
+            });
+
           }
         });
       });
     });
-    });
+  });
 
     const onInteractNpc = (e: Event) => {
       const detail = (e as CustomEvent).detail as NpcDialog;

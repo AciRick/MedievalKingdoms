@@ -726,11 +726,10 @@ button.success:hover {
 
 .chat-wrapper {
   position: fixed;
-  bottom: 40px;
+  bottom: 68px;
   left: 50%;
   transform: translateX(-50%);
   z-index: 30;
-  pointer-events: none;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -942,6 +941,69 @@ button.success:hover {
 .admin-mini-btn.delete:hover {
   background: var(--danger);
   color: white;
+}
+
+/* ─── World Editor ────────────────────────────────────────────────────────── */
+
+.editor-toolbar {
+  display: flex;
+  gap: 4px;
+  padding: 4px 8px;
+  background: #111;
+  border-bottom: 1px solid #333;
+  align-items: center;
+  min-height: 36px;
+  flex-shrink: 0;
+}
+
+.editor-tool-btn {
+  width: 32px;
+  height: 32px;
+  font-size: 16px;
+  cursor: pointer;
+  background: #1a1a2e;
+  border: 1px solid #333;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  line-height: 1;
+}
+
+.editor-tool-btn.active {
+  border-color: #c9a44b;
+  background: #2a2a3e;
+  box-shadow: 0 0 6px rgba(201, 164, 75, 0.3);
+}
+
+.editor-zoom {
+  font-size: 6px;
+  color: #aaa;
+  min-width: 60px;
+  text-align: center;
+}
+
+.editor-section-nav {
+  display: flex;
+  gap: 2px;
+}
+
+.editor-section-nav-btn {
+  font-size: 8px;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.editor-palette-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1px;
 }
 
 /* ─── Quest Offer Panel ───────────────────────────────────────────────────── */

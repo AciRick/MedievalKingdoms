@@ -370,4 +370,16 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ characterId }),
     }),
+
+  getCustomTiles: (adminPassword: string) =>
+    request<{ col: number; row: number; key: string }[]>("/admin/custom-tiles", {
+      headers: { "X-Admin-Password": adminPassword, "Content-Type": "application/json" },
+    }),
+
+  saveCustomTiles: (adminPassword: string, tiles: { col: number; row: number; key: string }[]) =>
+    request<{ message: string }>("/admin/custom-tiles", {
+      method: "PUT",
+      headers: { "X-Admin-Password": adminPassword, "Content-Type": "application/json" },
+      body: JSON.stringify(tiles),
+    }),
 };

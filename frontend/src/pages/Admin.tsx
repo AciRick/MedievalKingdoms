@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { api } from "../api/client";
+import WorldEditor from "../components/WorldEditor";
 
 interface NpcRow {
   id: number; name: string; role: string; posX: number; posY: number; zone: string; behaviorType: string;
@@ -40,6 +41,8 @@ export default function Admin() {
 
   const [magicEnabled, setMagicEnabled] = useState(false);
   const [spells, setSpells] = useState<Spell[]>([]);
+  const [showWorldEditor, setShowWorldEditor] = useState(false);
+  const [customTiles, setCustomTiles] = useState<{ col: number; row: number; key: string }[]>([]);
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -58,13 +61,14 @@ export default function Admin() {
 
   const loadAllData = async () => {
     try {
-      const [logs, players, npcList, questList, zoneList, magic] = await Promise.all([
+      const [logs, players, npcList, questList, zoneList, magic, ct] = await Promise.all([
         api.getAdminActionLog(password),
         api.getConnectedPlayers(password),
         api.getAdminNpcs(password),
         api.getAdminQuests(password),
         api.getAdminZones(password),
         api.getAdminMagic(password),
+        api.getCustomTiles(password),
       ]);
       setActionLog(logs.slice(0, 50));
       setConnectedPlayers(players);
@@ -73,6 +77,7 @@ export default function Admin() {
       setZones(zoneList);
       setMagicEnabled(magic.enabled);
       setSpells(magic.spells);
+      setCustomTiles(Array.isArray(ct) ? ct : []);
     } catch { /* ignore */ }
   };
 
@@ -197,6 +202,15 @@ export default function Admin() {
     } catch (err: unknown) { setError((err as Error).message); }
   };
 
+  const handleSaveWorldTiles = async (tiles: { col: number; row: number; key: string }[]) => {
+    try {
+      await api.saveCustomTiles(password, tiles);
+      setCustomTiles(tiles);
+      setShowWorldEditor(false);
+      setMsg("Mappa salvata! I giocatori vedranno le modifiche.");
+    } catch (err: unknown) { setError((err as Error).message); }
+  };
+
   const drawWorldMap = useCallback(() => {
     const canvas = canvasRef.current;
     if (!canvas || zones.length === 0) return;
@@ -243,6 +257,7 @@ export default function Admin() {
           </div>
           {error && <p className="error-text">{error}</p>}
           <button onClick={handleAuth} style={{ width: "100%" }}>ACCEDI</button>
+
           <p style={{ marginTop: 8, textAlign: "center" }}>
             <span className="link" onClick={() => navigate("/login")}>&lt;&lt; INDIETRO</span>
           </p>
@@ -252,6 +267,7 @@ export default function Admin() {
   }
 
   return (
+    <>
     <div className="page">
       <div className="page-card dashboard" style={{ maxWidth: 900, maxHeight: "90vh", overflowY: "auto" }}>
         <h2 className="page-title">PANNELLO ADMIN</h2>
@@ -277,6 +293,15 @@ export default function Admin() {
             </select>
             <button onClick={handleSendMessage} style={{ flex: 1, fontSize: 7 }}>INVIA A TUTTI</button>
           </div>
+        </div>
+
+        {/* Modifica Mondo */}
+        <div className="section">
+          <h3>MODIFICA MONDO</h3>
+          <button onClick={() => setShowWorldEditor(true)} style={{ width: "100%", fontSize: 8, padding: "10px 0" }}>
+            APRI EDITOR MAPPA
+          </button>
+          <p style={{ fontSize: 6, color: "#8888aa", marginTop: 4 }}>{customTiles.length} tile personalizzati piazzati</p>
         </div>
 
         {/* Eventi Globali */}
@@ -500,5 +525,9 @@ export default function Admin() {
         </p>
       </div>
     </div>
+    {showWorldEditor && (
+      <WorldEditor tiles={customTiles} onSave={handleSaveWorldTiles} onClose={() => setShowWorldEditor(false)} />
+    )}
+    </>
   );
 }

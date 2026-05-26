@@ -17,10 +17,10 @@ export const createCharacterSchema = z.object({
 export function getSpawnPosition(kingdom: string): { posX: number; posY: number; zone: string } {
   switch (kingdom) {
     case "VILLAGE_A":
-      return { posX: 150, posY: 280, zone: "VillageA" };
+      return { posX: 350, posY: 720, zone: "VillageA" };
     case "VILLAGE_B":
-      return { posX: 700, posY: 280, zone: "VillageB" };
+      return { posX: 5400, posY: 720, zone: "VillageB" };
     default:
-      return { posX: 400, posY: 300, zone: "NoMansLand" };
+      return { posX: 2600, posY: 700, zone: "NoMansLand" };
   }
 }

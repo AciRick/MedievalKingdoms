@@ -260,50 +260,91 @@ router.post("/pve", requireUser, async (req: Request, res: Response): Promise<vo
       return;
     }
 
+    const enemyDamage = enemy.strength * 2 + Math.floor(Math.random() * 6);
+
     if (timingScore >= 70) {
-      const damage = Math.max(3, Math.min(20, Math.floor(timingScore * 0.2)));
+      const playerDmg = Math.round(enemyDamage * 0.3);
+      const newHp = Math.max(0, char.hp - playerDmg);
+      const newXp = char.xp + enemy.xpReward;
+      const newLevel = Math.floor(Math.sqrt(newXp / 20)) + 1;
+
       await prisma.character.update({
         where: { id: characterId },
-        data: { xp: { increment: enemy.xpReward }, gold: { increment: enemy.goldReward } },
+        data: { xp: newXp, hp: newHp, gold: { increment: enemy.goldReward }, level: newLevel },
       });
+
+      let loot: { name?: string; type?: string } | null = null;
+      if (Math.random() < 0.6) {
+        const lootTable: Record<string, { name: string; type: string; statBonuses: string }[]> = {
+          bandit: [{ name: "Pugnale Arrugginito", type: "WEAPON", statBonuses: JSON.stringify({ atk: 5 }) }, { name: "Monete Rubate", type: "CONSUMABLE", statBonuses: JSON.stringify({ gold: 15 }) }],
+          wolf: [{ name: "Pelliccia di Lupo", type: "ARMOR", statBonuses: JSON.stringify({ def: 3 }) }, { name: "Dente Affilato", type: "WEAPON", statBonuses: JSON.stringify({ atk: 4 }) }],
+          bear: [{ name: "Pelliccia d'Orso", type: "ARMOR", statBonuses: JSON.stringify({ def: 6 }) }, { name: "Artiglio d'Orso", type: "WEAPON", statBonuses: JSON.stringify({ atk: 8 }) }],
+          skeleton: [{ name: "Ossa Antiche", type: "TALISMAN", statBonuses: JSON.stringify({ luck: 3 }) }, { name: "Spada Spettrale", type: "WEAPON", statBonuses: JSON.stringify({ atk: 9 }) }],
+          cave_bat: [{ name: "Ala di Pipistrello", type: "TALISMAN", statBonuses: JSON.stringify({ agility: 2 }) }],
+          cave_spider: [{ name: "Veleno di Ragno", type: "CONSUMABLE", statBonuses: JSON.stringify({ atk: 5 }) }, { name: "Seta Pregiata", type: "TALISMAN", statBonuses: JSON.stringify({ luck: 2 }) }],
+          raider: [{ name: "Ascia da Guerra", type: "WEAPON", statBonuses: JSON.stringify({ atk: 10 }) }, { name: "Monete del Predone", type: "CONSUMABLE", statBonuses: JSON.stringify({ gold: 30 }) }],
+        };
+        let category = "bandit";
+        if (enemyId.startsWith("wolf")) category = "wolf";
+        else if (enemyId.startsWith("bear")) category = "bear";
+        else if (enemyId.startsWith("skeleton") || enemyId.startsWith("cave_skeleton")) category = "skeleton";
+        else if (enemyId.startsWith("cave_bat")) category = "cave_bat";
+        else if (enemyId.startsWith("cave_spider")) category = "cave_spider";
+        else if (enemyId.startsWith("raider")) category = "raider";
+
+        const items = lootTable[category];
+        if (items) {
+          const lootItem = items[Math.floor(Math.random() * items.length)];
+          if (lootItem.type === "CONSUMABLE" && lootItem.name.includes("Monete")) {
+            const g = JSON.parse(lootItem.statBonuses).gold || 10;
+            await prisma.character.update({ where: { id: characterId }, data: { gold: { increment: g } } });
+            loot = { name: `${lootItem.name} (+${g} oro)`, type: "gold" };
+          } else {
+            let item = await prisma.item.findFirst({ where: { name: lootItem.name } });
+            if (!item) item = await prisma.item.create({ data: { name: lootItem.name, type: lootItem.type, statBonuses: lootItem.statBonuses, rarity: "raro", requiredRoles: "[]", description: `Ottenuto sconfiggendo un ${enemy.name}` } });
+            await prisma.equipment.create({ data: { characterId, itemId: item.id, slot: lootItem.type === "WEAPON" || lootItem.type === "STAFF" ? "main_hand" : lootItem.type === "ARMOR" ? "body" : "accessory" } });
+            loot = { name: lootItem.name, type: lootItem.type };
+          }
+        }
+      }
 
       await logAction("character", characterId, "pve_win", { enemyId, timingScore, xpGain: enemy.xpReward });
 
       res.json({
-        winner: char.name,
-        loser: enemy.name,
-        damage,
-        message: `Hai sconfitto ${enemy.name} infliggendo ${Math.round(damage)} danni! +${enemy.xpReward} XP +${enemy.goldReward} oro`,
-        xpGain: enemy.xpReward,
-        goldGain: enemy.goldReward,
-        playerWon: true,
+        winner: char.name, loser: enemy.name, damage: Math.round(playerDmg),
+        message: `Hai sconfitto ${enemy.name}! +${enemy.xpReward} XP +${enemy.goldReward} oro`,
+        xpGain: enemy.xpReward, goldGain: enemy.goldReward,
+        playerWon: true, loot,
       });
     } else {
-      const damage = Math.round((100 - timingScore) / 4);
-      const finalDamage = Math.max(3, Math.min(25, damage));
-      const newHp = Math.max(0, char.hp - finalDamage);
+      const playerDmg = Math.round(enemyDamage * (timingScore < 35 ? 1.2 : 0.8));
+      const newHp = Math.max(0, char.hp - playerDmg);
+      const died = newHp <= 0;
 
       const updateData: Record<string, unknown> = { hp: newHp };
-      const died = newHp <= 0;
       if (died) {
-        updateData.hp = 100;
-        updateData.energy = 100;
-        updateData.posX = char.kingdom === "VILLAGE_A" ? 150 : 700;
-        updateData.posY = 280;
+        const inv = await prisma.characterInventory.findUnique({ where: { characterId } });
+        if (inv) {
+          const resources = ["wood", "stone", "fish", "herbs", "meat", "iron"] as const;
+          for (const r of resources) {
+            const v = (inv as any)[r] || 0;
+            if (v > 0) await prisma.characterInventory.update({ where: { characterId }, data: { [r]: Math.floor(v * 0.4) } });
+          }
+        }
+        await prisma.character.update({ where: { id: characterId }, data: { gold: Math.floor(char.gold * 0.5) } });
+        updateData.hp = 100; updateData.energy = 100;
+        updateData.posX = char.kingdom === "VILLAGE_A" ? 350 : 5400;
+        updateData.posY = 700;
         updateData.zone = char.kingdom === "VILLAGE_A" ? "VillageA" : "VillageB";
       }
 
       await prisma.character.update({ where: { id: characterId }, data: updateData });
-
-      await logAction("character", characterId, "pve_loss", { enemyId, timingScore, damage: finalDamage });
+      await logAction("character", characterId, "pve_loss", { enemyId, timingScore, damage: playerDmg, died });
 
       res.json({
-        winner: enemy.name,
-        loser: char.name,
-        damage: finalDamage,
-        message: `${enemy.name} ti ha colpito per ${finalDamage} danni!`,
-        playerWon: false,
-        playerDied: died,
+        winner: enemy.name, loser: char.name, damage: playerDmg,
+        message: died ? `Sei stato ucciso da ${enemy.name}! Hai perso il 60% delle risorse.` : `${enemy.name} ti ha colpito per ${playerDmg} danni!`,
+        playerWon: false, playerDied: died,
       });
     }
   } catch (err) {

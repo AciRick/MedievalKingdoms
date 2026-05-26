@@ -285,4 +285,32 @@ router.put("/magic", async (req: Request, res: Response): Promise<void> => {
   }
 });
 
+// ─── CUSTOM TILES ────────────────────────────────────────────────────────────
+
+router.get("/custom-tiles", async (_req: Request, res: Response): Promise<void> => {
+  try {
+    const row = await prisma.worldSetting.findUnique({ where: { key: "customTiles" } });
+    res.json(row ? JSON.parse(row.value) : []);
+  } catch (err) {
+    res.status(500).json({ error: "Errore interno" });
+  }
+});
+
+router.put("/custom-tiles", async (req: Request, res: Response): Promise<void> => {
+  try {
+    const tiles = req.body;
+    await prisma.worldSetting.upsert({
+      where: { key: "customTiles" },
+      update: { value: JSON.stringify(tiles) },
+      create: { key: "customTiles", value: JSON.stringify(tiles) },
+    });
+    await logAction("system", null, "custom_tiles_updated", { count: tiles.length });
+    io.emit("world:tiles-updated", { tiles });
+    res.json({ message: "Mappa salvata", tiles });
+  } catch (err) {
+    console.error("PUT /admin/custom-tiles error:", err);
+    res.status(500).json({ error: "Errore interno" });
+  }
+});
+
 export default router;

@@ -101,6 +101,11 @@ export function setupSocketIO(httpServer: HttpServer): Server {
       socket.emit("world:event-status", getCurrentEvent());
     });
 
+    socket.on("world:tiles-request", async () => {
+      const row = await prisma.worldSetting.findUnique({ where: { key: "customTiles" } });
+      socket.emit("world:tiles-list", row ? JSON.parse(row.value) : []);
+    });
+
     socket.on("item:collect", async (data: { itemId: number }) => {
       const charId = socket.data.characterId;
       if (!charId) {

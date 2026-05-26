@@ -18,9 +18,9 @@ const ZONE_GRID: { zone: string; x: number; y: number; w: number; h: number }[] 
 ];
 
 const ZONE_FLOOR_TILE: Record<string, string> = {
-  Abbey: "dungeon_stone", VillageA: "town_grass", VillageB: "town_grass",
-  NoMansLand: "town_dirt", Forest: "town_grass3", Coast: "town_water",
-  Lake: "town_water", DeepForest: "town_grass3", Mountains: "dungeon_stone",
+  Abbey: "dung_0000", VillageA: "town_0000", VillageB: "town_0000",
+  NoMansLand: "town_0012", Forest: "town_0002", Coast: "rpg_0198",
+  Lake: "rpg_0198", DeepForest: "town_0002", Mountains: "dung_0000",
 };
 
 const ZONE_LABELS: Record<string, string> = {
@@ -29,16 +29,8 @@ const ZONE_LABELS: Record<string, string> = {
   Lake: "Lago", DeepForest: "Foresta Profonda", Mountains: "Montagne",
 };
 
-interface NpcDef {
-  x: number; y: number; color: number; label: string; dialog: string;
-  questBuildingName?: string;
-  shop?: { buys: string; buyLabel: string; sellPrice: number };
-}
-
-interface EnemyDef {
-  id: string; x: number; y: number; label: string; kingdom: string;
-  strength: number; agility: number; wanderRange: number;
-}
+interface NpcDef { x: number; y: number; color: number; label: string; dialog: string; questBuildingName?: string; shop?: { buys: string; buyLabel: string; sellPrice: number }; }
+interface EnemyDef { id: string; x: number; y: number; label: string; kingdom: string; strength: number; agility: number; wanderRange: number; }
 
 const NPC_DATA: NpcDef[] = [
   { x: 400, y: 600, color: 0x22cc22, label: "Mercante", dialog: "\"Benvenuto! Ho merci rare.\"", questBuildingName: "Capanna Foresta" },
@@ -69,97 +61,52 @@ const ENEMY_DATA: EnemyDef[] = [
   { id: "bear_2", x: 3500, y: 2900, label: "Orso", kingdom: "HOSTILE", strength: 9, agility: 2, wanderRange: 180 },
 ];
 
-const INTERACT_DISTANCE = 60;
-const INTERACT_COOLDOWN = 500;
-const GATHER_DISTANCE = 50;
-const ITEM_DISTANCE = 40;
-const ENEMY_CHASE_DISTANCE = 150;
-const ENEMY_INTERACT_DISTANCE = 55;
-const ENEMY_SPEED = 80;
+const INTERACT_DISTANCE = 60, INTERACT_COOLDOWN = 500, GATHER_DISTANCE = 50, ITEM_DISTANCE = 40;
+const ENEMY_CHASE_DISTANCE = 150, ENEMY_ATTACK_DISTANCE = 25, ENEMY_INTERACT_DISTANCE = 55, ENEMY_SPEED = 80;
 
-interface EnemySprite {
-  sprite: Phaser.GameObjects.Sprite;
-  label: Phaser.GameObjects.Text;
-  def: EnemyDef;
-  originX: number;
-  originY: number;
-  wanderTarget: { x: number; y: number };
-  wanderTimer: number;
-  chasing: boolean;
-}
-
-interface BuildingDef {
-  x: number; y: number; w: number; h: number; label: string;
-  rest?: boolean;
-  free?: boolean;
-}
-
-interface ResourceNode {
-  x: number; y: number; resourceName: string; resourceLabel: string; gatherTime: number; gatherYield: number;
-}
+interface EnemySprite { sprite: Phaser.GameObjects.Sprite; label: Phaser.GameObjects.Text; def: EnemyDef; originX: number; originY: number; wanderTarget: { x: number; y: number }; wanderTimer: number; chasing: boolean; }
+interface BuildingDef { x: number; y: number; w: number; h: number; label: string; rest?: boolean; free?: boolean; }
+interface ResourceNode { x: number; y: number; resourceName: string; resourceLabel: string; gatherTime: number; gatherYield: number; }
 
 const BUILDING_DATA: BuildingDef[] = [
-  { x: 300, y: 640, w: 3, h: 3, label: "Castello Nord" },
-  { x: 160, y: 550, w: 2, h: 2, label: "Caserma", rest: true },
-  { x: 500, y: 700, w: 2, h: 1, label: "Taverna" },
-  { x: 200, y: 500, w: 2, h: 1, label: "Fucina" },
-  { x: 500, y: 550, w: 2, h: 2, label: "Capanna Foresta" },
-  { x: 250, y: 780, w: 2, h: 2, label: "Fattoria Nord" },
+  { x: 300, y: 640, w: 3, h: 3, label: "Castello Nord" }, { x: 160, y: 550, w: 2, h: 2, label: "Caserma", rest: true },
+  { x: 500, y: 700, w: 2, h: 1, label: "Taverna" }, { x: 200, y: 500, w: 2, h: 1, label: "Fucina" },
+  { x: 500, y: 550, w: 2, h: 2, label: "Capanna Foresta" }, { x: 250, y: 780, w: 2, h: 2, label: "Fattoria Nord" },
   { x: 2100, y: 220, w: 3, h: 2, label: "Abbazia", rest: true, free: true },
-  { x: 5400, y: 700, w: 3, h: 3, label: "Palazzo Sud" },
-  { x: 5180, y: 580, w: 2, h: 2, label: "Tempio", rest: true },
-  { x: 6200, y: 900, w: 3, h: 2, label: "Porto Comm.le" },
-  { x: 6300, y: 750, w: 2, h: 2, label: "Miniera" },
-  { x: 5200, y: 850, w: 2, h: 1, label: "Bottega Pesce" },
-  { x: 5250, y: 880, w: 2, h: 2, label: "Fattoria Sud" },
-  { x: 6200, y: 2000, w: 3, h: 1, label: "Molo del Porto" },
-  { x: 4000, y: 1800, w: 2, h: 1, label: "Capanna Lago" },
-  { x: 3400, y: 2700, w: 2, h: 2, label: "Rovine" },
-  { x: 4500, y: 2800, w: 2, h: 1, label: "Miniera Montagna" },
+  { x: 5400, y: 700, w: 3, h: 3, label: "Palazzo Sud" }, { x: 5180, y: 580, w: 2, h: 2, label: "Tempio", rest: true },
+  { x: 6200, y: 900, w: 3, h: 2, label: "Porto Comm.le" }, { x: 6300, y: 750, w: 2, h: 2, label: "Miniera" },
+  { x: 5200, y: 850, w: 2, h: 1, label: "Bottega Pesce" }, { x: 5250, y: 880, w: 2, h: 2, label: "Fattoria Sud" },
+  { x: 6200, y: 2000, w: 3, h: 1, label: "Molo del Porto" }, { x: 4000, y: 1800, w: 2, h: 1, label: "Capanna Lago" },
+  { x: 3400, y: 2700, w: 2, h: 2, label: "Rovine" }, { x: 4500, y: 2800, w: 2, h: 1, label: "Miniera Montagna" },
   { x: 5632, y: 3328, w: 2, h: 2, label: "CaveEntrance" },
 ];
 
 const RESOURCE_NODES: ResourceNode[] = [
-  { x: 48, y: 760, resourceName: "wood", resourceLabel: "Legna", gatherTime: 4, gatherYield: 3 },
-  { x: 112, y: 792, resourceName: "wood", resourceLabel: "Legna", gatherTime: 4, gatherYield: 3 },
-  { x: 176, y: 728, resourceName: "wood", resourceLabel: "Legna", gatherTime: 4, gatherYield: 3 },
-  { x: 272, y: 824, resourceName: "wood", resourceLabel: "Legna", gatherTime: 4, gatherYield: 3 },
-  { x: 368, y: 760, resourceName: "wood", resourceLabel: "Legna", gatherTime: 4, gatherYield: 3 },
-  { x: 432, y: 856, resourceName: "wood", resourceLabel: "Legna", gatherTime: 4, gatherYield: 3 },
-  { x: 80, y: 920, resourceName: "wood", resourceLabel: "Legna", gatherTime: 4, gatherYield: 3 },
-  { x: 528, y: 784, resourceName: "wood", resourceLabel: "Legna", gatherTime: 4, gatherYield: 3 },
-  { x: 656, y: 744, resourceName: "wood", resourceLabel: "Legna", gatherTime: 4, gatherYield: 3 },
-  { x: 800, y: 792, resourceName: "wood", resourceLabel: "Legna", gatherTime: 4, gatherYield: 3 },
-  { x: 960, y: 760, resourceName: "wood", resourceLabel: "Legna", gatherTime: 4, gatherYield: 3 },
-  { x: 144, y: 760, resourceName: "herbs", resourceLabel: "Erbe", gatherTime: 4, gatherYield: 2 },
-  { x: 240, y: 816, resourceName: "herbs", resourceLabel: "Erbe", gatherTime: 4, gatherYield: 2 },
-  { x: 400, y: 920, resourceName: "herbs", resourceLabel: "Erbe", gatherTime: 4, gatherYield: 2 },
-  { x: 560, y: 888, resourceName: "herbs", resourceLabel: "Erbe", gatherTime: 4, gatherYield: 2 },
-  { x: 688, y: 920, resourceName: "herbs", resourceLabel: "Erbe", gatherTime: 4, gatherYield: 2 },
-  { x: 880, y: 856, resourceName: "herbs", resourceLabel: "Erbe", gatherTime: 4, gatherYield: 2 },
-  { x: 720, y: 1520, resourceName: "stone", resourceLabel: "Pietra", gatherTime: 5, gatherYield: 2 },
-  { x: 800, y: 1552, resourceName: "stone", resourceLabel: "Pietra", gatherTime: 5, gatherYield: 2 },
-  { x: 880, y: 1488, resourceName: "stone", resourceLabel: "Pietra", gatherTime: 5, gatherYield: 2 },
-  { x: 960, y: 1568, resourceName: "stone", resourceLabel: "Pietra", gatherTime: 5, gatherYield: 2 },
-  { x: 1040, y: 1504, resourceName: "stone", resourceLabel: "Pietra", gatherTime: 5, gatherYield: 2 },
-  { x: 1120, y: 1584, resourceName: "stone", resourceLabel: "Pietra", gatherTime: 5, gatherYield: 2 },
-  { x: 720, y: 1600, resourceName: "iron", resourceLabel: "Ferro", gatherTime: 6, gatherYield: 1 },
-  { x: 1040, y: 1584, resourceName: "iron", resourceLabel: "Ferro", gatherTime: 6, gatherYield: 1 },
-  { x: 1200, y: 1536, resourceName: "iron", resourceLabel: "Ferro", gatherTime: 6, gatherYield: 1 },
-  { x: 1280, y: 1600, resourceName: "iron", resourceLabel: "Ferro", gatherTime: 6, gatherYield: 1 },
-  { x: 1312, y: 760, resourceName: "fish", resourceLabel: "Pesce", gatherTime: 3, gatherYield: 2 },
-  { x: 1440, y: 792, resourceName: "fish", resourceLabel: "Pesce", gatherTime: 3, gatherYield: 2 },
-  { x: 1568, y: 760, resourceName: "fish", resourceLabel: "Pesce", gatherTime: 3, gatherYield: 2 },
-  { x: 1696, y: 824, resourceName: "fish", resourceLabel: "Pesce", gatherTime: 3, gatherYield: 2 },
-  { x: 1856, y: 760, resourceName: "fish", resourceLabel: "Pesce", gatherTime: 3, gatherYield: 2 },
-  { x: 1984, y: 792, resourceName: "fish", resourceLabel: "Pesce", gatherTime: 3, gatherYield: 2 },
-  { x: 2080, y: 856, resourceName: "fish", resourceLabel: "Pesce", gatherTime: 3, gatherYield: 2 },
-  { x: 2208, y: 760, resourceName: "fish", resourceLabel: "Pesce", gatherTime: 3, gatherYield: 2 },
+  { x: 100, y: 1850, resourceName: "wood", resourceLabel: "Legna", gatherTime: 4, gatherYield: 3 },
+  { x: 300, y: 1900, resourceName: "wood", resourceLabel: "Legna", gatherTime: 4, gatherYield: 3 },
+  { x: 500, y: 1820, resourceName: "wood", resourceLabel: "Legna", gatherTime: 4, gatherYield: 3 },
+  { x: 700, y: 1950, resourceName: "wood", resourceLabel: "Legna", gatherTime: 4, gatherYield: 3 },
+  { x: 900, y: 1880, resourceName: "wood", resourceLabel: "Legna", gatherTime: 4, gatherYield: 3 },
+  { x: 1100, y: 1920, resourceName: "wood", resourceLabel: "Legna", gatherTime: 4, gatherYield: 3 },
+  { x: 1300, y: 1850, resourceName: "wood", resourceLabel: "Legna", gatherTime: 4, gatherYield: 3 },
+  { x: 1500, y: 1900, resourceName: "wood", resourceLabel: "Legna", gatherTime: 4, gatherYield: 3 },
+  { x: 3600, y: 2650, resourceName: "iron", resourceLabel: "Ferro", gatherTime: 6, gatherYield: 2 },
+  { x: 3800, y: 2750, resourceName: "iron", resourceLabel: "Ferro", gatherTime: 6, gatherYield: 2 },
+  { x: 3400, y: 2850, resourceName: "stone", resourceLabel: "Pietra", gatherTime: 5, gatherYield: 3 },
+  { x: 3700, y: 2800, resourceName: "stone", resourceLabel: "Pietra", gatherTime: 5, gatherYield: 3 },
+  { x: 3300, y: 1900, resourceName: "fish", resourceLabel: "Pesce", gatherTime: 3, gatherYield: 2 },
+  { x: 3500, y: 1950, resourceName: "fish", resourceLabel: "Pesce", gatherTime: 3, gatherYield: 2 },
+  { x: 4300, y: 1900, resourceName: "fish", resourceLabel: "Pesce", gatherTime: 3, gatherYield: 3 },
+  { x: 5200, y: 1920, resourceName: "fish", resourceLabel: "Pesce", gatherTime: 3, gatherYield: 3 },
+  { x: 200, y: 2650, resourceName: "wood", resourceLabel: "Legna", gatherTime: 4, gatherYield: 4 },
+  { x: 500, y: 2700, resourceName: "wood", resourceLabel: "Legna", gatherTime: 4, gatherYield: 4 },
+  { x: 300, y: 2700, resourceName: "herbs", resourceLabel: "Erbe", gatherTime: 4, gatherYield: 2 },
+  { x: 600, y: 2650, resourceName: "herbs", resourceLabel: "Erbe", gatherTime: 4, gatherYield: 2 },
+  { x: 1000, y: 2680, resourceName: "herbs", resourceLabel: "Erbe", gatherTime: 4, gatherYield: 2 },
+  { x: 200, y: 2900, resourceName: "herbs", resourceLabel: "Erbe", gatherTime: 4, gatherYield: 3 },
 ];
 
-interface WorldItemDef {
-  id: number; posX: number; posY: number; name: string; type: string;
-}
+interface WorldItemDef { id: number; posX: number; posY: number; name: string; type: string; }
 
 export class WorldScene extends Phaser.Scene {
   private playerSprite!: Phaser.GameObjects.Sprite;
@@ -170,7 +117,6 @@ export class WorldScene extends Phaser.Scene {
   private cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
   private wasd!: { W: Phaser.Input.Keyboard.Key; A: Phaser.Input.Keyboard.Key; S: Phaser.Input.Keyboard.Key; D: Phaser.Input.Keyboard.Key };
   private moveTimer = 0;
-  private assetsLoaded = false;
   private interactKey!: Phaser.Input.Keyboard.Key;
   private inventoryKey!: Phaser.Input.Keyboard.Key;
   private lastInteractTime = 0;
@@ -181,56 +127,45 @@ export class WorldScene extends Phaser.Scene {
   private combatActive = false;
   private playerNameLabel!: Phaser.GameObjects.Text;
   private worldItemSprites: Map<number, Phaser.GameObjects.Sprite> = new Map();
+  private customTileSprites: Phaser.GameObjects.Image[] = [];
   private earthquakeSpeed = false;
 
   constructor() { super({ key: "WorldScene" }); }
 
   preload(): void {
-    // Tiny Town (colored) — erba, alberi, cespugli, terra, case
-    this.load.image("town_grass", "/assets/tiles/kenney-tiny-town/tile_0000.png");
-    this.load.image("town_grass2", "/assets/tiles/kenney-tiny-town/tile_0001.png");
-    this.load.image("town_grass3", "/assets/tiles/kenney-tiny-town/tile_0002.png");
-    this.load.image("town_tree", "/assets/tiles/kenney-tiny-town/tile_0003.png");
-    this.load.image("town_tree2", "/assets/tiles/kenney-tiny-town/tile_0004.png");
-    this.load.image("town_bush", "/assets/tiles/kenney-tiny-town/tile_0005.png");
-    this.load.image("town_dirt", "/assets/tiles/kenney-tiny-town/tile_0012.png");
-    this.load.image("town_dirt2", "/assets/tiles/kenney-tiny-town/tile_0024.png");
-    this.load.image("town_house", "/assets/tiles/kenney-tiny-town/tile_0048.png");
-    this.load.image("town_house_red", "/assets/tiles/kenney-tiny-town/tile_0052.png");
-
-    // Tiny Dungeon (colored) — pietra, mura, decorazioni, sabbia
-    this.load.image("dungeon_stone", "/assets/tiles/kenney-tiny-dungeon/tile_0000.png");
-    this.load.image("dungeon_wall_top", "/assets/tiles/kenney-tiny-dungeon/tile_0006.png");
-    this.load.image("dungeon_stone2", "/assets/tiles/kenney-tiny-dungeon/tile_0012.png");
-    this.load.image("dungeon_stone3", "/assets/tiles/kenney-tiny-dungeon/tile_0024.png");
-    this.load.image("dungeon_decor", "/assets/tiles/kenney-tiny-dungeon/tile_0019.png");
-    this.load.image("dungeon_wall", "/assets/tiles/kenney-tiny-dungeon/tile_0040.png");
-    this.load.image("town_sand", "/assets/tiles/kenney-tiny-dungeon/tile_0048.png");
-
-    // RPG Urban Pack — acqua
-    this.load.image("town_water", "/assets/tiles/kenney-rpg-urban/tile_0198.png");
-
-    this.load.image("dungeon_wall_top", "/assets/tiles/kenney-tiny-dungeon/tile_0002.png");
-    this.load.image("wall_slit", "/assets/tiles/kenney-tiny-dungeon/tile_0028.png");
-    this.load.image("wall_flag", "/assets/tiles/kenney-tiny-dungeon/tile_0029.png");
-
-    // Tiny Town — cancello 2x1
-    this.load.image("gate_top", "/assets/tiles/kenney-tiny-town/tile_10113.png");
-    this.load.image("gate_bot", "/assets/tiles/kenney-tiny-town/tile_10114.png");
+    this.load.image("town_0000", "/assets/tiles/kenney-tiny-town/tile_0000.png");
+    this.load.image("town_0001", "/assets/tiles/kenney-tiny-town/tile_0001.png");
+    this.load.image("town_0002", "/assets/tiles/kenney-tiny-town/tile_0002.png");
+    this.load.image("town_0003", "/assets/tiles/kenney-tiny-town/tile_0003.png");
+    this.load.image("town_0004", "/assets/tiles/kenney-tiny-town/tile_0004.png");
+    this.load.image("town_0005", "/assets/tiles/kenney-tiny-town/tile_0005.png");
+    this.load.image("town_0012", "/assets/tiles/kenney-tiny-town/tile_0012.png");
+    this.load.image("town_0024", "/assets/tiles/kenney-tiny-town/tile_0024.png");
+    this.load.image("town_0048", "/assets/tiles/kenney-tiny-town/tile_0048.png");
+    this.load.image("town_0052", "/assets/tiles/kenney-tiny-town/tile_0052.png");
+    this.load.image("town_0113", "/assets/tiles/kenney-tiny-town/tile_10113.png");
+    this.load.image("town_0114", "/assets/tiles/kenney-tiny-town/tile_10114.png");
+    this.load.image("dung_0000", "/assets/tiles/kenney-tiny-dungeon/tile_0000.png");
+    this.load.image("dung_0002", "/assets/tiles/kenney-tiny-dungeon/tile_0002.png");
+    this.load.image("dung_0012", "/assets/tiles/kenney-tiny-dungeon/tile_0012.png");
+    this.load.image("dung_0019", "/assets/tiles/kenney-tiny-dungeon/tile_0019.png");
+    this.load.image("dung_0024", "/assets/tiles/kenney-tiny-dungeon/tile_0024.png");
+    this.load.image("dung_0028", "/assets/tiles/kenney-tiny-dungeon/tile_0028.png");
+    this.load.image("dung_0029", "/assets/tiles/kenney-tiny-dungeon/tile_0029.png");
+    this.load.image("dung_0040", "/assets/tiles/kenney-tiny-dungeon/tile_0040.png");
+    this.load.image("dung_0048", "/assets/tiles/kenney-tiny-dungeon/tile_0048.png");
+    this.load.image("rpg_0198", "/assets/tiles/kenney-rpg-urban/tile_0198.png");
   }
 
   create(): void {
-    if (this.textures.exists("town_grass") && this.textures.exists("dungeon_stone")) this.assetsLoaded = true;
-
     this.drawMap();
     this.generateCharacterTextures();
     this.generateItemTextures();
 
     const startX = this.playerCharacter?.posX ?? 400;
-    const startY = this.playerCharacter?.posY ?? 300;
+    const startY = this.playerCharacter?.posY ?? 600;
 
     this.playerSprite = this.add.sprite(startX, startY, "player_char").setDepth(10);
-
     this.playerNameLabel = this.add.text(startX, startY - 18, this.playerCharacter?.name || "???", {
       fontFamily: '"Press Start 2P"', fontSize: "5px", color: "#ffd700",
       backgroundColor: "rgba(0,0,0,0.7)", padding: { x: 2, y: 1 },
@@ -238,21 +173,14 @@ export class WorldScene extends Phaser.Scene {
 
     const kb = this.input.keyboard!;
     this.cursors = kb.createCursorKeys();
-    this.wasd = {
-      W: kb.addKey(Phaser.Input.Keyboard.KeyCodes.W, false),
-      A: kb.addKey(Phaser.Input.Keyboard.KeyCodes.A, false),
-      S: kb.addKey(Phaser.Input.Keyboard.KeyCodes.S, false),
-      D: kb.addKey(Phaser.Input.Keyboard.KeyCodes.D, false),
-    };
-    this.interactKey = kb.addKey(Phaser.Input.Keyboard.KeyCodes.E, false);
-    this.inventoryKey = kb.addKey(Phaser.Input.Keyboard.KeyCodes.I, false);
+    this.wasd = { W: kb.addKey(Phaser.Input.Keyboard.KeyCodes.W), A: kb.addKey(Phaser.Input.Keyboard.KeyCodes.A), S: kb.addKey(Phaser.Input.Keyboard.KeyCodes.S), D: kb.addKey(Phaser.Input.Keyboard.KeyCodes.D) };
+    this.interactKey = kb.addKey(Phaser.Input.Keyboard.KeyCodes.E);
+    this.inventoryKey = kb.addKey(Phaser.Input.Keyboard.KeyCodes.I);
 
     this.cameras.main.startFollow(this.playerSprite, true, 0.1, 0.1);
     this.cameras.main.setBounds(0, 0, MAP_WIDTH * TILE_SIZE, MAP_HEIGHT * TILE_SIZE);
 
-    this.drawNpcs();
-    this.drawEnemies();
-    this.drawResourceMarkers();
+    this.drawNpcs(); this.drawEnemies(); this.drawResourceMarkers();
 
     this.zoneLabelText = this.add.text(4, 4, "???", {
       fontFamily: '"Press Start 2P"', fontSize: "8px", color: "#ffffff",
@@ -262,27 +190,15 @@ export class WorldScene extends Phaser.Scene {
     window.addEventListener("phaser:disable-movement", () => { this.movementDisabled = true; });
     window.addEventListener("phaser:enable-movement", () => { this.movementDisabled = false; });
     window.addEventListener("phaser:gathering-cancel", () => { this.gatheringActive = false; this.movementDisabled = false; });
-
-    if (!this.assetsLoaded) {
-      this.add.text(this.cameras.main.width / 2, this.cameras.main.height / 2 - 60,
-        "Esegui `npm run fetch:assets` per scaricare gli sprite", {
-          fontFamily: '"Press Start 2P"', fontSize: "10px", color: "#ffcc00",
-          backgroundColor: "rgba(0,0,0,0.8)", padding: { x: 8, y: 6 }, align: "center",
-        }).setOrigin(0.5).setScrollFactor(0).setDepth(200);
-    }
   }
 
   update(_time: number, delta: number): void {
     if (!this.playerSprite) return;
-
     (window as any).__playerPos = { x: this.playerSprite.x, y: this.playerSprite.y };
-
     this.updateEnemies(delta);
 
-    const baseSpeed = 160;
-    const speed = this.earthquakeSpeed ? 80 : baseSpeed;
+    const speed = this.earthquakeSpeed ? 80 : 160;
     let dx = 0; let dy = 0;
-
     if (!this.movementDisabled) {
       if (this.cursors.left.isDown || this.wasd.A.isDown) dx -= 1;
       if (this.cursors.right.isDown || this.wasd.D.isDown) dx += 1;
@@ -292,16 +208,15 @@ export class WorldScene extends Phaser.Scene {
 
     if (dx !== 0 || dy !== 0) {
       const n = new Phaser.Math.Vector2(dx, dy).normalize();
-      this.playerSprite.x += n.x * speed * (delta / 1000);
-      this.playerSprite.y += n.y * speed * (delta / 1000);
+      const newX = this.playerSprite.x + n.x * speed * (delta / 1000);
+      const newY = this.playerSprite.y + n.y * speed * (delta / 1000);
+      if (!this.isWallTile(Math.floor(newX / TILE_SIZE), Math.floor(this.playerSprite.y / TILE_SIZE))) this.playerSprite.x = newX;
+      if (!this.isWallTile(Math.floor(this.playerSprite.x / TILE_SIZE), Math.floor(newY / TILE_SIZE))) this.playerSprite.y = newY;
       this.playerSprite.x = Phaser.Math.Clamp(this.playerSprite.x, 10, MAP_WIDTH * TILE_SIZE - 10);
       this.playerSprite.y = Phaser.Math.Clamp(this.playerSprite.y, 10, MAP_HEIGHT * TILE_SIZE - 10);
-      this.playerNameLabel.x = this.playerSprite.x;
-      this.playerNameLabel.y = this.playerSprite.y - 18;
-
+      this.playerNameLabel.x = this.playerSprite.x; this.playerNameLabel.y = this.playerSprite.y - 18;
       const zone = this.getZoneAt(this.playerSprite.x, this.playerSprite.y);
-      if (this.zoneLabelText && zone) this.zoneLabelText.setText(zone);
-
+      if (this.zoneLabelText) this.zoneLabelText.setText(zone);
       this.moveTimer += delta;
       if (this.moveTimer >= 100) {
         this.moveTimer = 0;
@@ -309,39 +224,21 @@ export class WorldScene extends Phaser.Scene {
         if (sm?.getSocket()?.connected) sm.getSocket().emit("move", { characterId: this.playerCharacter?.id, posX: this.playerSprite.x, posY: this.playerSprite.y, zone });
       }
     }
-
     if (Phaser.Input.Keyboard.JustDown(this.interactKey)) this.tryInteract();
     if (Phaser.Input.Keyboard.JustDown(this.inventoryKey)) window.dispatchEvent(new CustomEvent("phaser:toggle-inventory"));
   }
 
-  setEventState(_eventType: string | null, earthquake: boolean): void {
-    this.earthquakeSpeed = earthquake;
-  }
-
-  setPlayerCharacter(character: Character): void {
-    this.playerCharacter = character;
-    if (this.playerNameLabel) this.playerNameLabel.setText(character.name);
-  }
+  setEventState(_et: string | null, eq: boolean): void { this.earthquakeSpeed = eq; }
+  setPlayerCharacter(character: Character): void { this.playerCharacter = character; if (this.playerNameLabel) this.playerNameLabel.setText(character.name); }
 
   addOtherPlayer(characterId: number, name: string, x: number, y: number): void {
     if (this.otherPlayers.has(characterId)) return;
     const sprite = this.add.sprite(x, y, "other_char").setDepth(9);
-    const label = this.add.text(x, y - 18, name, {
-      fontFamily: '"Press Start 2P"', fontSize: "5px", color: "#ffffff",
-      backgroundColor: "rgba(0,0,0,0.7)", padding: { x: 2, y: 1 },
-    }).setOrigin(0.5).setDepth(11);
+    const label = this.add.text(x, y - 18, name, { fontFamily: '"Press Start 2P"', fontSize: "5px", color: "#ffffff", backgroundColor: "rgba(0,0,0,0.7)", padding: { x: 2, y: 1 } }).setOrigin(0.5).setDepth(11);
     this.otherPlayers.set(characterId, { sprite, label });
   }
-
-  moveOtherPlayer(characterId: number, x: number, y: number): void {
-    const e = this.otherPlayers.get(characterId);
-    if (e) { e.sprite.x = x; e.sprite.y = y; e.label.x = x; e.label.y = y - 18; }
-  }
-
-  removeOtherPlayer(characterId: number): void {
-    const e = this.otherPlayers.get(characterId);
-    if (e) { e.sprite.destroy(); e.label.destroy(); this.otherPlayers.delete(characterId); }
-  }
+  moveOtherPlayer(characterId: number, x: number, y: number): void { const e = this.otherPlayers.get(characterId); if (e) { e.sprite.x = x; e.sprite.y = y; e.label.x = x; e.label.y = y - 18; } }
+  removeOtherPlayer(characterId: number): void { const e = this.otherPlayers.get(characterId); if (e) { e.sprite.destroy(); e.label.destroy(); this.otherPlayers.delete(characterId); } }
 
   spawnWorldItem(item: WorldItemDef): void {
     if (this.worldItemSprites.has(item.id)) return;
@@ -353,50 +250,48 @@ export class WorldScene extends Phaser.Scene {
     this.worldItemSprites.set(item.id, sprite);
     window.dispatchEvent(new CustomEvent("minimap:item-spawned", { detail: item }));
   }
-
   removeWorldItem(itemId: number): void {
     const s = this.worldItemSprites.get(itemId);
     if (s) { s.destroy(); this.worldItemSprites.delete(itemId); }
     window.dispatchEvent(new CustomEvent("minimap:item-collected", { detail: { itemId } }));
   }
+  clearWorldItems(): void { for (const [, s] of this.worldItemSprites) s.destroy(); this.worldItemSprites.clear(); }
 
-  clearWorldItems(): void {
-    for (const [, s] of this.worldItemSprites) s.destroy();
-    this.worldItemSprites.clear();
+  drawCustomTiles(tiles: { col: number; row: number; key: string }[]): void {
+    for (const s of this.customTileSprites) s.destroy();
+    this.customTileSprites = [];
+    for (const t of tiles) {
+      if (this.textures.exists(t.key)) {
+        const img = this.add.image(t.col * TILE_SIZE + TILE_SIZE / 2, t.row * TILE_SIZE + TILE_SIZE / 2, t.key);
+        img.setDisplaySize(TILE_SIZE, TILE_SIZE).setDepth(6);
+        this.customTileSprites.push(img);
+      }
+    }
   }
 
   playCombatAnimation(ex: number, ey: number, playerWon: boolean): void {
     this.cameras.main.shake(150, 0.005);
-    const flash = this.add.rectangle(ex, ey, 20, 20, playerWon ? 0x33ff33 : 0xff3333, 0.8);
-    flash.setDepth(50);
+    const flash = this.add.rectangle(ex, ey, 20, 20, playerWon ? 0x33ff33 : 0xff3333, 0.8).setDepth(50);
     this.tweens.add({ targets: flash, alpha: 0, scaleX: 2, scaleY: 2, duration: 400, onComplete: () => flash.destroy() });
-
     this.playerSprite.setTint(playerWon ? 0x88ff88 : 0xff8888);
     this.time.delayedCall(300, () => this.playerSprite.clearTint());
-
     const dmgText = this.add.text(ex, ey - 30, playerWon ? "VINTO!" : "PERSO!", {
       fontFamily: '"Press Start 2P"', fontSize: "8px", color: playerWon ? "#33ff33" : "#ff3333",
     }).setOrigin(0.5).setDepth(50);
     this.tweens.add({ targets: dmgText, y: dmgText.y - 25, alpha: 0, duration: 800, onComplete: () => dmgText.destroy() });
   }
 
-  endCombat(): void {
-    this.combatActive = false;
-    this.movementDisabled = false;
-  }
-
   defeatEnemySprite(enemyId: string): void {
     const e = this.enemySprites.find(es => es.def.id === enemyId);
-    if (e) {
-      this.tweens.add({ targets: [e.sprite, e.label], alpha: 0, duration: 500, onComplete: () => { e.sprite.destroy(); e.label.destroy(); } });
-      this.enemySprites = this.enemySprites.filter(es => es.def.id !== enemyId);
-    }
+    if (e) { this.tweens.add({ targets: [e.sprite, e.label], alpha: 0, duration: 500, onComplete: () => { e.sprite.destroy(); e.label.destroy(); } }); this.enemySprites = this.enemySprites.filter(es => es.def.id !== enemyId); }
   }
+
+  endCombat(): void { this.combatActive = false; this.movementDisabled = false; }
 
   private drawMap(): void {
     const mw = MAP_WIDTH * TILE_SIZE, mh = MAP_HEIGHT * TILE_SIZE;
     this.add.rectangle(mw / 2, mh / 2, mw, mh, 0x1a1a2e).setDepth(0);
-    const bg = this.add.tileSprite(mw / 2, mh / 2, mw, mh, "town_grass2").setDepth(1);
+    const bg = this.add.tileSprite(mw / 2, mh / 2, mw, mh, "town_0001").setDepth(1);
     bg.setDisplaySize(mw, mh);
     for (const z of ZONE_GRID) {
       const t = ZONE_FLOOR_TILE[z.zone]; if (!t) continue;
@@ -404,63 +299,38 @@ export class WorldScene extends Phaser.Scene {
       const ts = this.add.tileSprite(zx + zw / 2, zy + zh / 2, zw, zh, t).setDepth(2);
       ts.setDisplaySize(zw, zh);
     }
-    this.drawWall(); this.drawBuildings(); this.drawTrees(); this.drawWater(); this.drawZoneLabels(); this.drawTerrainVariety();
+    this.drawWall(); this.drawBuildings(); this.drawTrees(); this.drawWater(); this.drawVillageWater(); this.drawZoneLabels(); this.drawTerrainVariety();
   }
 
   private drawWall(): void {
-    const wallTile = "dungeon_wall";
-    const wallKey = this.textures.exists(wallTile) ? wallTile : "town_house";
-    const depth = 12;
-
-    const drawH = (col: number, row: number, count: number, horizontal: boolean) => {
-      for (let i = 0; i < count; i++) {
-        const cx = (col + (horizontal ? i : 0)) * TILE_SIZE + TILE_SIZE / 2;
-        const cy = (row + (horizontal ? 0 : i)) * TILE_SIZE + TILE_SIZE / 2;
-        this.add.image(cx, cy, wallKey).setDisplaySize(TILE_SIZE, TILE_SIZE).setDepth(depth);
-      }
-    };
-
-    // ─── VillageA mura ───
+    const wallKey = "dung_0040"; const depth = 12;
     const va_l = 0, va_r = 55, va_t = 14, va_b = 55;
-    // alto
     for (let c = va_l; c < va_r; c++) this.add.image(c * TILE_SIZE + TILE_SIZE / 2, va_t * TILE_SIZE + TILE_SIZE / 2, wallKey).setDisplaySize(TILE_SIZE, TILE_SIZE).setDepth(depth);
-    // basso
     for (let c = va_l; c < va_r; c++) this.add.image(c * TILE_SIZE + TILE_SIZE / 2, va_b * TILE_SIZE + TILE_SIZE / 2, wallKey).setDisplaySize(TILE_SIZE, TILE_SIZE).setDepth(depth);
-    // destro (con cancello a righe 34-35)
-    for (let r = va_t; r < va_b; r++) {
-      if (r >= 34 && r <= 35) continue;
-      this.add.image(va_r * TILE_SIZE + TILE_SIZE / 2, r * TILE_SIZE + TILE_SIZE / 2, wallKey).setDisplaySize(TILE_SIZE, TILE_SIZE).setDepth(depth);
-    }
-    this.add.image(va_r * TILE_SIZE + TILE_SIZE / 2, 34 * TILE_SIZE + TILE_SIZE / 2, "gate_top").setDisplaySize(TILE_SIZE, TILE_SIZE).setDepth(depth);
-    this.add.image(va_r * TILE_SIZE + TILE_SIZE / 2, 35 * TILE_SIZE + TILE_SIZE / 2, "gate_bot").setDisplaySize(TILE_SIZE, TILE_SIZE).setDepth(depth);
+    for (let r = va_t; r < va_b; r++) { if (r !== 34 && r !== 35) this.add.image(va_r * TILE_SIZE + TILE_SIZE / 2, r * TILE_SIZE + TILE_SIZE / 2, wallKey).setDisplaySize(TILE_SIZE, TILE_SIZE).setDepth(depth); }
+    this.add.image(va_r * TILE_SIZE + TILE_SIZE / 2, 34 * TILE_SIZE + TILE_SIZE / 2, "town_0113").setDisplaySize(TILE_SIZE, TILE_SIZE).setDepth(depth);
+    this.add.image(va_r * TILE_SIZE + TILE_SIZE / 2, 35 * TILE_SIZE + TILE_SIZE / 2, "town_0114").setDisplaySize(TILE_SIZE, TILE_SIZE).setDepth(depth);
 
-    // ─── VillageB mura ───
     const vb_l = 161, vb_r = 216, vb_t = 14, vb_b = 55;
     for (let c = vb_l; c < vb_r; c++) this.add.image(c * TILE_SIZE + TILE_SIZE / 2, vb_t * TILE_SIZE + TILE_SIZE / 2, wallKey).setDisplaySize(TILE_SIZE, TILE_SIZE).setDepth(depth);
     for (let c = vb_l; c < vb_r; c++) this.add.image(c * TILE_SIZE + TILE_SIZE / 2, vb_b * TILE_SIZE + TILE_SIZE / 2, wallKey).setDisplaySize(TILE_SIZE, TILE_SIZE).setDepth(depth);
-    for (let r = vb_t; r < vb_b; r++) {
-      if (r >= 34 && r <= 35) continue;
-      this.add.image(vb_l * TILE_SIZE + TILE_SIZE / 2, r * TILE_SIZE + TILE_SIZE / 2, wallKey).setDisplaySize(TILE_SIZE, TILE_SIZE).setDepth(depth);
-    }
-    this.add.image(vb_l * TILE_SIZE + TILE_SIZE / 2, 34 * TILE_SIZE + TILE_SIZE / 2, "gate_top").setDisplaySize(TILE_SIZE, TILE_SIZE).setDepth(depth);
-    this.add.image(vb_l * TILE_SIZE + TILE_SIZE / 2, 35 * TILE_SIZE + TILE_SIZE / 2, "gate_bot").setDisplaySize(TILE_SIZE, TILE_SIZE).setDepth(depth);
+    for (let r = vb_t; r < vb_b; r++) { if (r !== 34 && r !== 35) this.add.image(vb_l * TILE_SIZE + TILE_SIZE / 2, r * TILE_SIZE + TILE_SIZE / 2, wallKey).setDisplaySize(TILE_SIZE, TILE_SIZE).setDepth(depth); }
+    this.add.image(vb_l * TILE_SIZE + TILE_SIZE / 2, 34 * TILE_SIZE + TILE_SIZE / 2, "town_0113").setDisplaySize(TILE_SIZE, TILE_SIZE).setDepth(depth);
+    this.add.image(vb_l * TILE_SIZE + TILE_SIZE / 2, 35 * TILE_SIZE + TILE_SIZE / 2, "town_0114").setDisplaySize(TILE_SIZE, TILE_SIZE).setDepth(depth);
   }
 
   private drawBuildings(): void {
     for (const b of BUILDING_DATA) {
-      let tk = "town_house";
-      if (b.label.includes("Castello") || b.label.includes("Palazzo")) tk = "town_house_red";
-      else if (b.label.includes("Miniera") || b.label.includes("Molo")) tk = "dungeon_wall";
-      else if (b.label.includes("Caserma")) tk = "dungeon_wall";
-      else if (b.label.includes("Tempio")) tk = "dungeon_decor";
-      else if (b.label.includes("Taverna") || b.label.includes("Fucina")) tk = "town_house";
-      else if (b.label.includes("Capanna")) tk = "town_house";
-      else if (b.label.includes("Bottega")) tk = "town_house";
+      let tk = "town_0048";
+      if (b.label.includes("Castello") || b.label.includes("Palazzo")) tk = "town_0052";
+      else if (b.label.includes("Miniera") || b.label.includes("Molo")) tk = "dung_0040";
+      else if (b.label.includes("Caserma")) tk = "dung_0040";
+      else if (b.label.includes("Tempio")) tk = "dung_0019";
       else if (b.label.includes("Abbazia")) {
-        this.drawBuildingTiled(b.x, b.y, b.w, b.h, "dungeon_wall", b.label);
-        this.add.image(b.x + 0 * TILE_SIZE + TILE_SIZE / 2, b.y + TILE_SIZE / 2, "wall_flag").setDisplaySize(TILE_SIZE, TILE_SIZE).setDepth(4);
-        this.add.image(b.x + 1 * TILE_SIZE + TILE_SIZE / 2, b.y + TILE_SIZE / 2, "wall_slit").setDisplaySize(TILE_SIZE, TILE_SIZE).setDepth(4);
-        this.add.image(b.x + 2 * TILE_SIZE + TILE_SIZE / 2, b.y + TILE_SIZE / 2, "dungeon_wall_top").setDisplaySize(TILE_SIZE, TILE_SIZE).setDepth(4);
+        this.drawBuildingTiled(b.x, b.y, b.w, b.h, "dung_0040", b.label);
+        this.add.image(b.x + 0 * TILE_SIZE + TILE_SIZE / 2, b.y + TILE_SIZE / 2, "dung_0029").setDisplaySize(TILE_SIZE, TILE_SIZE).setDepth(4);
+        this.add.image(b.x + 1 * TILE_SIZE + TILE_SIZE / 2, b.y + TILE_SIZE / 2, "dung_0028").setDisplaySize(TILE_SIZE, TILE_SIZE).setDepth(4);
+        this.add.image(b.x + 2 * TILE_SIZE + TILE_SIZE / 2, b.y + TILE_SIZE / 2, "dung_0002").setDisplaySize(TILE_SIZE, TILE_SIZE).setDepth(4);
         continue;
       }
       this.drawBuildingTiled(b.x, b.y, b.w, b.h, tk, b.label);
@@ -468,7 +338,7 @@ export class WorldScene extends Phaser.Scene {
   }
 
   private drawBuildingTiled(px: number, py: number, tw: number, th: number, tileKey: string, label: string): void {
-    const key = this.textures.exists(tileKey) ? tileKey : "town_house";
+    const key = this.textures.exists(tileKey) ? tileKey : "town_0048";
     for (let r = 0; r < th; r++) for (let c = 0; c < tw; c++) this.add.image(px + c * TILE_SIZE + TILE_SIZE / 2, py + r * TILE_SIZE + TILE_SIZE / 2, key).setDisplaySize(TILE_SIZE, TILE_SIZE).setDepth(4);
     const cx = px + (tw * TILE_SIZE) / 2, cy = py + th * TILE_SIZE + 6;
     this.add.text(cx, cy, label, { fontFamily: '"Press Start 2P"', fontSize: "5px", color: "#cccccc", backgroundColor: "rgba(0,0,0,0.5)", padding: { x: 2, y: 1 } }).setOrigin(0.5, 0).setDepth(15);
@@ -483,67 +353,54 @@ export class WorldScene extends Phaser.Scene {
       { x: 24, y: 31 }, { x: 29, y: 32 },
     ];
     for (const p of pos) {
-      const key = (p.x + p.y) % 2 === 0 ? "town_tree" : "town_tree2";
+      const key = (p.x + p.y) % 2 === 0 ? "town_0003" : "town_0004";
       if (this.textures.exists(key)) this.add.image(p.x * TILE_SIZE + TILE_SIZE / 2, p.y * TILE_SIZE + TILE_SIZE / 2, key).setDisplaySize(TILE_SIZE, TILE_SIZE).setDepth(5);
     }
-
     const bushes = [
-      { x: 1, y: 7 }, { x: 5, y: 8 }, { x: 10, y: 7 }, { x: 14, y: 9 }, { x: 20, y: 8 },
-      { x: 52, y: 8 }, { x: 58, y: 9 }, { x: 65, y: 7 }, { x: 70, y: 10 },
-      { x: 3, y: 23 }, { x: 7, y: 25 }, { x: 14, y: 22 }, { x: 22, y: 24 },
-      { x: 27, y: 23 }, { x: 32, y: 25 }, { x: 16, y: 10 }, { x: 60, y: 12 },
-      { x: 55, y: 15 }, { x: 8, y: 14 }, { x: 68, y: 14 },
+      { x: 1, y: 7 }, { x: 5, y: 8 }, { x: 10, y: 7 }, { x: 14, y: 9 }, { x: 20, y: 8 }, { x: 52, y: 8 }, { x: 58, y: 9 },
+      { x: 65, y: 7 }, { x: 70, y: 10 }, { x: 3, y: 23 }, { x: 7, y: 25 }, { x: 14, y: 22 }, { x: 22, y: 24 },
+      { x: 27, y: 23 }, { x: 32, y: 25 }, { x: 16, y: 10 }, { x: 60, y: 12 }, { x: 55, y: 15 }, { x: 8, y: 14 }, { x: 68, y: 14 },
     ];
-    for (const b of bushes) {
-      if (this.textures.exists("town_bush"))
-        this.add.image(b.x * TILE_SIZE + TILE_SIZE / 2, b.y * TILE_SIZE + TILE_SIZE / 2, "town_bush").setDisplaySize(TILE_SIZE, TILE_SIZE).setDepth(5);
-    }
+    for (const b of bushes) if (this.textures.exists("town_0005")) this.add.image(b.x * TILE_SIZE + TILE_SIZE / 2, b.y * TILE_SIZE + TILE_SIZE / 2, "town_0005").setDisplaySize(TILE_SIZE, TILE_SIZE).setDepth(5);
   }
 
   private drawWater(): void {
-    for (let c = 36; c < 72; c++)
-      for (let r = 24; r < 27; r++)
-        this.add.image(c * TILE_SIZE + TILE_SIZE / 2, r * TILE_SIZE + TILE_SIZE / 2, "town_sand").setDisplaySize(TILE_SIZE, TILE_SIZE).setDepth(3);
+    for (let c = 130; c < 216; c++)
+      for (let r = 55; r < 58; r++)
+        this.add.image(c * TILE_SIZE + TILE_SIZE / 2, r * TILE_SIZE + TILE_SIZE / 2, "dung_0048").setDisplaySize(TILE_SIZE, TILE_SIZE).setDepth(3);
+  }
+
+  private drawVillageWater(): void {
+    const wt = (col: number, row: number) => this.add.image(col * TILE_SIZE + TILE_SIZE / 2, row * TILE_SIZE + TILE_SIZE / 2, "rpg_0198").setDisplaySize(TILE_SIZE, TILE_SIZE).setDepth(4);
+    const vw = (tlCol: number, tlRow: number, w: number, h: number) => { for (let r = 0; r < h; r++) for (let c = 0; c < w; c++) wt(tlCol + c, tlRow + r); };
+    vw(8, 30, 4, 3); vw(14, 36, 2, 2); vw(175, 30, 4, 4); vw(195, 34, 3, 2);
   }
 
   private drawTerrainVariety(): void {
     const tile = (key: string, col: number, row: number) => {
-      if (this.textures.exists(key))
-        this.add.image(col * TILE_SIZE + TILE_SIZE / 2, row * TILE_SIZE + TILE_SIZE / 2, key).setDisplaySize(TILE_SIZE, TILE_SIZE).setDepth(3);
+      if (this.textures.exists(key)) this.add.image(col * TILE_SIZE + TILE_SIZE / 2, row * TILE_SIZE + TILE_SIZE / 2, key).setDisplaySize(TILE_SIZE, TILE_SIZE).setDepth(3);
     };
-
     const scatter = (zone: { x: number; y: number; w: number; h: number }, keys: string[], count: number) => {
-      for (let i = 0; i < count; i++) {
-        const cx = zone.x + Math.floor(Math.random() * zone.w);
-        const cy = zone.y + Math.floor(Math.random() * zone.h);
-        const k = keys[Math.floor(Math.random() * keys.length)];
-        tile(k, cx, cy);
-      }
+      for (let i = 0; i < count; i++) { const cx = zone.x + Math.floor(Math.random() * zone.w); const cy = zone.y + Math.floor(Math.random() * zone.h); tile(keys[Math.floor(Math.random() * keys.length)], cx, cy); }
     };
-
-    scatter(ZONE_GRID[0], ["town_grass2", "town_grass3", "town_bush"], 35);
-    scatter(ZONE_GRID[1], ["town_grass2", "town_grass3", "town_bush"], 35);
-    scatter(ZONE_GRID[2], ["town_dirt2", "town_bush"], 25);
-    scatter(ZONE_GRID[3], ["dungeon_stone", "dungeon_stone2", "dungeon_stone3"], 25);
-    scatter(ZONE_GRID[4], ["town_grass", "town_grass2", "town_bush", "town_tree"], 30);
-    scatter(ZONE_GRID[5], ["town_sand"], 20);
+    scatter(ZONE_GRID[0], ["town_0001", "town_0002", "town_0005"], 35);
+    scatter(ZONE_GRID[1], ["town_0001", "town_0002", "town_0005"], 35);
+    scatter(ZONE_GRID[2], ["town_0024", "town_0005"], 25);
+    scatter(ZONE_GRID[3], ["dung_0000", "dung_0012", "dung_0024"], 25);
+    scatter(ZONE_GRID[4], ["town_0000", "town_0001", "town_0005", "town_0003"], 30);
+    scatter(ZONE_GRID[5], ["dung_0048"], 20);
   }
 
   private drawZoneLabels(): void {
     const s: Phaser.Types.GameObjects.Text.TextStyle = { fontFamily: '"Press Start 2P"', fontSize: "8px", color: "#ffffff", backgroundColor: "rgba(0,0,0,0.5)", padding: { x: 4, y: 2 } };
-    for (const z of ZONE_GRID) {
-      const cx = (z.x + z.w / 2) * TILE_SIZE, cy = (z.y + z.h / 2) * TILE_SIZE;
-      this.add.text(cx, cy, ZONE_LABELS[z.zone] || z.zone, s).setOrigin(0.5).setDepth(20);
-    }
+    for (const z of ZONE_GRID) { const cx = (z.x + z.w / 2) * TILE_SIZE, cy = (z.y + z.h / 2) * TILE_SIZE; this.add.text(cx, cy, ZONE_LABELS[z.zone] || z.zone, s).setOrigin(0.5).setDepth(20); }
   }
 
   private drawNpcs(): void {
     for (const npc of NPC_DATA) {
       const tint = npc.shop ? 0xffcc00 : npc.questBuildingName ? 0x44cc44 : npc.color;
       const sprite = this.add.sprite(npc.x, npc.y, "npc_char").setTint(tint).setDepth(8);
-      let lt = npc.label;
-      if (npc.shop) lt += " $";
-      if (npc.questBuildingName) lt += " !";
+      let lt = npc.label; if (npc.shop) lt += " $"; if (npc.questBuildingName) lt += " !";
       this.add.text(npc.x, npc.y - 16, lt, { fontFamily: '"Press Start 2P"', fontSize: "4px", color: "#cccccc", backgroundColor: "rgba(0,0,0,0.6)", padding: { x: 2, y: 1 } }).setOrigin(0.5).setDepth(9);
       this.npcSprites.push({ sprite, def: npc });
     }
@@ -559,135 +416,77 @@ export class WorldScene extends Phaser.Scene {
 
   private updateEnemies(delta: number): void {
     if (!this.playerCharacter || !this.playerSprite) return;
-    const pk = this.playerCharacter.kingdom;
-    const px = this.playerSprite.x, py = this.playerSprite.y;
-
+    const pk = this.playerCharacter.kingdom; const px = this.playerSprite.x, py = this.playerSprite.y;
     for (const e of this.enemySprites) {
       const distToPlayer = Phaser.Math.Distance.Between(px, py, e.sprite.x, e.sprite.y);
       const isEnemy = e.def.kingdom === "HOSTILE" || (e.def.kingdom !== "NEUTRAL" && e.def.kingdom !== pk && pk !== "NEUTRAL");
-
       if (isEnemy && distToPlayer < ENEMY_CHASE_DISTANCE) {
         const enemyZone = this.getZoneAt(e.sprite.x, e.sprite.y);
-        if (enemyZone === "VillageA" || enemyZone === "VillageB") {
-          e.chasing = false;
-          e.wanderTarget = { x: e.originX, y: e.originY };
-        } else {
+        if (enemyZone === "VillageA" || enemyZone === "VillageB") { e.chasing = false; e.wanderTarget = { x: e.originX, y: e.originY }; }
+        else {
           e.chasing = true;
           const angle = Phaser.Math.Angle.Between(e.sprite.x, e.sprite.y, px, py);
-          e.sprite.x += Math.cos(angle) * ENEMY_SPEED * (delta / 1000);
-          e.sprite.y += Math.sin(angle) * ENEMY_SPEED * (delta / 1000);
-
-          if (distToPlayer < 45 && !this.combatActive && !this.movementDisabled && !this.gatheringActive) {
-            this.combatActive = true;
-            this.movementDisabled = true;
-            e.sprite.setTint(0xff0000);
-            window.dispatchEvent(new CustomEvent("phaser:pve-attack", {
-              detail: { enemyId: e.def.id, enemyName: e.def.label, enemyX: e.sprite.x, enemyY: e.sprite.y },
-            }));
+          e.sprite.x += Math.cos(angle) * ENEMY_SPEED * (delta / 1000); e.sprite.y += Math.sin(angle) * ENEMY_SPEED * (delta / 1000);
+          if (distToPlayer < ENEMY_ATTACK_DISTANCE && !this.combatActive && !this.movementDisabled && !this.gatheringActive) {
+            this.combatActive = true; this.movementDisabled = true; e.sprite.setTint(0xff0000);
+            window.dispatchEvent(new CustomEvent("phaser:pve-attack", { detail: { enemyId: e.def.id, enemyName: e.def.label, enemyX: e.sprite.x, enemyY: e.sprite.y } }));
           }
         }
       } else {
-        e.chasing = false;
-        e.wanderTimer += delta;
-        if (e.wanderTimer > 2000 + Math.random() * 2000) {
-          e.wanderTimer = 0;
-          const r = e.def.wanderRange;
-          e.wanderTarget = {
-            x: e.originX + (Math.random() - 0.5) * r * 2,
-            y: e.originY + (Math.random() - 0.5) * r * 2,
-          };
-        }
+        e.chasing = false; e.wanderTimer += delta;
+        if (e.wanderTimer > 2000 + Math.random() * 2000) { e.wanderTimer = 0; const r = e.def.wanderRange; e.wanderTarget = { x: e.originX + (Math.random() - 0.5) * r * 2, y: e.originY + (Math.random() - 0.5) * r * 2 }; }
         const wdist = Phaser.Math.Distance.Between(e.sprite.x, e.sprite.y, e.wanderTarget.x, e.wanderTarget.y);
-        if (wdist > 3) {
-          const angle = Phaser.Math.Angle.Between(e.sprite.x, e.sprite.y, e.wanderTarget.x, e.wanderTarget.y);
-          e.sprite.x += Math.cos(angle) * 30 * (delta / 1000);
-          e.sprite.y += Math.sin(angle) * 30 * (delta / 1000);
-
-          const wanderZone = this.getZoneAt(e.sprite.x, e.sprite.y);
-          if (wanderZone === "VillageA" || wanderZone === "VillageB") {
-            e.sprite.x = e.originX;
-            e.sprite.y = e.originY;
-          }
-        }
+        if (wdist > 3) { const angle = Phaser.Math.Angle.Between(e.sprite.x, e.sprite.y, e.wanderTarget.x, e.wanderTarget.y); e.sprite.x += Math.cos(angle) * 30 * (delta / 1000); e.sprite.y += Math.sin(angle) * 30 * (delta / 1000); }
       }
-
-      e.label.x = e.sprite.x;
-      e.label.y = e.sprite.y - 16;
+      e.label.x = e.sprite.x; e.label.y = e.sprite.y - 16;
     }
   }
 
   private drawResourceMarkers(): void {
-    const rc: Record<string, number> = { wood: 0x33aa33, stone: 0x888888, iron: 0xcc8844, herbs: 0x44cc44, fish: 0x44aadd, meat: 0xcc6644 };
-    for (const n of RESOURCE_NODES) {
-      const m = this.add.sprite(n.x, n.y, "npc_char").setTint(rc[n.resourceName] || 0xffffff).setScale(0.6).setDepth(6).setAlpha(0.7);
-      this.resourceMarkers.push(m);
-    }
+    const rc: Record<string, number> = { wood: 0x33aa33, stone: 0x888888, iron: 0xcc8844, herbs: 0x44cc44, fish: 0x44aadd };
+    for (const n of RESOURCE_NODES) this.resourceMarkers.push(this.add.sprite(n.x, n.y, "npc_char").setTint(rc[n.resourceName] || 0xffffff).setScale(0.6).setDepth(6).setAlpha(0.7));
   }
 
   private tryInteract(): void {
-    const now = this.time.now;
-    if (now - this.lastInteractTime < INTERACT_COOLDOWN) return;
-    if (!this.playerSprite || this.gatheringActive) return;
+    const now = this.time.now; if (now - this.lastInteractTime < INTERACT_COOLDOWN) return; if (!this.playerSprite || this.gatheringActive) return;
     const px = this.playerSprite.x, py = this.playerSprite.y;
-
     for (const entry of this.npcSprites) {
       if (Phaser.Math.Distance.Between(px, py, entry.def.x, entry.def.y) <= INTERACT_DISTANCE) {
         this.lastInteractTime = now;
-        window.dispatchEvent(new CustomEvent("phaser:interact-npc", {
-          detail: { name: entry.def.label, dialog: entry.def.dialog, questBuildingName: entry.def.questBuildingName, shop: entry.def.shop || null },
-        }));
+        window.dispatchEvent(new CustomEvent("phaser:interact-npc", { detail: { name: entry.def.label, dialog: entry.def.dialog, questBuildingName: entry.def.questBuildingName, shop: entry.def.shop || null } }));
         return;
       }
     }
-
     for (const bld of BUILDING_DATA) {
       const cx = bld.x + (bld.w * TILE_SIZE) / 2, cy = bld.y + (bld.h * TILE_SIZE) / 2;
       if (Phaser.Math.Distance.Between(px, py, cx, cy) <= INTERACT_DISTANCE + Math.max(bld.w, bld.h) * TILE_SIZE / 2) {
         this.lastInteractTime = now;
-        if (bld.label === "CaveEntrance") {
-          window.dispatchEvent(new CustomEvent("phaser:interact-cave"));
-        } else if (bld.rest) {
-          window.dispatchEvent(new CustomEvent("phaser:interact-rest", { detail: { label: bld.label, free: bld.free || false } }));
-        } else {
-          window.dispatchEvent(new CustomEvent("phaser:interact-building", { detail: { label: bld.label } }));
-        }
+        if (bld.label === "CaveEntrance") { window.dispatchEvent(new CustomEvent("phaser:interact-cave")); }
+        else if (bld.rest) { window.dispatchEvent(new CustomEvent("phaser:interact-rest", { detail: { label: bld.label, free: bld.free || false } })); }
+        else { window.dispatchEvent(new CustomEvent("phaser:interact-building", { detail: { label: bld.label } })); }
         return;
       }
     }
-
-    for (const [itemId, sprite] of this.worldItemSprites) {
-      if (Phaser.Math.Distance.Between(px, py, sprite.x, sprite.y) <= ITEM_DISTANCE) {
-        this.lastInteractTime = now;
-        window.dispatchEvent(new CustomEvent("phaser:collect-item", { detail: { itemId } }));
-        return;
-      }
-    }
-
     for (const e of this.enemySprites) {
-      const dist = Phaser.Math.Distance.Between(px, py, e.sprite.x, e.sprite.y);
-      if (dist <= ENEMY_INTERACT_DISTANCE) {
+      if (Phaser.Math.Distance.Between(px, py, e.sprite.x, e.sprite.y) <= ENEMY_INTERACT_DISTANCE) {
         this.lastInteractTime = now;
         window.dispatchEvent(new CustomEvent("phaser:pve-attack", { detail: { enemyId: e.def.id, enemyName: e.def.label, enemyX: e.sprite.x, enemyY: e.sprite.y } }));
         return;
       }
     }
-
+    for (const [itemId, sprite] of this.worldItemSprites) {
+      if (Phaser.Math.Distance.Between(px, py, sprite.x, sprite.y) <= ITEM_DISTANCE) { this.lastInteractTime = now; window.dispatchEvent(new CustomEvent("phaser:collect-item", { detail: { itemId } })); return; }
+    }
     for (const node of RESOURCE_NODES) {
-      if (Phaser.Math.Distance.Between(px, py, node.x, node.y) <= GATHER_DISTANCE) {
-        this.lastInteractTime = now;
-        this.startGathering(node);
-        return;
-      }
+      if (Phaser.Math.Distance.Between(px, py, node.x, node.y) <= GATHER_DISTANCE) { this.lastInteractTime = now; this.startGathering(node); return; }
     }
   }
 
   private startGathering(node: ResourceNode): void {
-    this.gatheringActive = true;
-    this.movementDisabled = true;
+    this.gatheringActive = true; this.movementDisabled = true;
     window.dispatchEvent(new CustomEvent("phaser:gathering-start", { detail: { resourceLabel: node.resourceLabel, gatherTime: node.gatherTime } }));
     this.time.delayedCall(node.gatherTime * 1000, () => {
-      this.gatheringActive = false;
-      this.movementDisabled = false;
+      this.gatheringActive = false; this.movementDisabled = false;
       window.dispatchEvent(new CustomEvent("phaser:gathering-complete", { detail: { resourceName: node.resourceName, resourceLabel: node.resourceLabel, amount: node.gatherYield } }));
     });
   }
@@ -698,28 +497,26 @@ export class WorldScene extends Phaser.Scene {
     return "NoMansLand";
   }
 
+  isWallTile(col: number, row: number): boolean {
+    if (col === 55 && row >= 14 && row <= 54) return row !== 34 && row !== 35;
+    if (col === 161 && row >= 14 && row <= 54) return row !== 34 && row !== 35;
+    if (row === 14 && col >= 0 && col <= 54) return true;
+    if (row === 55 && col >= 0 && col <= 54) return true;
+    if (row === 14 && col >= 161 && col <= 215) return true;
+    if (row === 55 && col >= 161 && col <= 215) return true;
+    return false;
+  }
+
   private generateCharacterTextures(): void {
     if (this.textures.exists("player_char")) return;
-    const draw = (g: Phaser.GameObjects.Graphics, bc: number, hc: number) => {
-      g.fillStyle(bc); g.fillRect(7, 12, 14, 14);
-      g.fillStyle(hc); g.fillCircle(14, 8, 6);
-      g.fillStyle(0x000000); g.fillRect(10, 7, 2, 2); g.fillRect(16, 7, 2, 2);
-    };
-    const mk = (key: string, bc: number, hc: number) => {
-      const g = this.add.graphics(); g.setVisible(false); draw(g, bc, hc); g.generateTexture(key, 28, 28); g.destroy();
-    };
-    mk("player_char", 0x8b6914, 0xffd700);
-    mk("other_char", 0x335577, 0x4488ff);
-    mk("npc_char", 0x555555, 0x888888);
+    const draw = (g: Phaser.GameObjects.Graphics, bc: number, hc: number) => { g.fillStyle(bc); g.fillRect(7, 12, 14, 14); g.fillStyle(hc); g.fillCircle(14, 8, 6); g.fillStyle(0x000000); g.fillRect(10, 7, 2, 2); g.fillRect(16, 7, 2, 2); };
+    const mk = (key: string, bc: number, hc: number) => { const g = this.add.graphics(); g.setVisible(false); draw(g, bc, hc); g.generateTexture(key, 28, 28); g.destroy(); };
+    mk("player_char", 0x8b6914, 0xffd700); mk("other_char", 0x335577, 0x4488ff); mk("npc_char", 0x555555, 0x888888);
   }
 
   private generateItemTextures(): void {
     if (this.textures.exists("item_weapon")) return;
-
-    const mk = (key: string, fn: (g: Phaser.GameObjects.Graphics) => void) => {
-      const g = this.add.graphics(); g.setVisible(false); fn(g); g.generateTexture(key, 24, 24); g.destroy();
-    };
-
+    const mk = (key: string, fn: (g: Phaser.GameObjects.Graphics) => void) => { const g = this.add.graphics(); g.setVisible(false); fn(g); g.generateTexture(key, 24, 24); g.destroy(); };
     mk("item_weapon", (g) => { g.fillStyle(0xcccccc); g.fillRect(4, 2, 3, 18); g.fillRect(1, 4, 9, 3); });
     mk("item_armor", (g) => { g.fillStyle(0x6688aa); g.fillRect(2, 4, 20, 16); });
     mk("item_talisman", (g) => { g.fillStyle(0xffcc00); g.fillCircle(12, 12, 8); g.fillStyle(0x000000); g.fillCircle(12, 12, 4); });
