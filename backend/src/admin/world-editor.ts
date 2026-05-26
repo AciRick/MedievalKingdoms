@@ -299,6 +299,16 @@ router.get("/custom-tiles", async (_req: Request, res: Response): Promise<void> 
 router.put("/custom-tiles", async (req: Request, res: Response): Promise<void> => {
   try {
     const tiles = req.body;
+    const oldRow = await prisma.worldSetting.findUnique({ where: { key: "customTiles" } });
+    if (oldRow && oldRow.value !== "[]") {
+      const backupKey = `customTiles_backup_${Date.now()}`;
+      await prisma.worldSetting.create({ data: { key: backupKey, value: oldRow.value } });
+      const backups = await prisma.worldSetting.findMany({ where: { key: { startsWith: "customTiles_backup_" } }, orderBy: { key: "desc" } });
+      if (backups.length > 10) {
+        const toDelete = backups.slice(10);
+        for (const b of toDelete) await prisma.worldSetting.delete({ where: { key: b.key } });
+      }
+    }
     await prisma.worldSetting.upsert({
       where: { key: "customTiles" },
       update: { value: JSON.stringify(tiles) },
@@ -309,6 +319,35 @@ router.put("/custom-tiles", async (req: Request, res: Response): Promise<void> =
     res.json({ message: "Mappa salvata", tiles });
   } catch (err) {
     console.error("PUT /admin/custom-tiles error:", err);
+    res.status(500).json({ error: "Errore interno" });
+  }
+});
+
+router.get("/custom-tiles/backups", async (_req: Request, res: Response): Promise<void> => {
+  try {
+    const rows = await prisma.worldSetting.findMany({ where: { key: { startsWith: "customTiles_backup_" } }, orderBy: { key: "desc" } });
+    const backups = rows.map(r => ({ key: r.key, timestamp: parseInt(r.key.replace("customTiles_backup_", "")), tiles: JSON.parse(r.value) }));
+    res.json(backups);
+  } catch (err) {
+    res.status(500).json({ error: "Errore interno" });
+  }
+});
+
+router.post("/custom-tiles/restore", async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { key } = req.body;
+    const row = await prisma.worldSetting.findUnique({ where: { key } });
+    if (!row) { res.status(404).json({ error: "Backup non trovato" }); return; }
+    await prisma.worldSetting.upsert({
+      where: { key: "customTiles" },
+      update: { value: row.value },
+      create: { key: "customTiles", value: row.value },
+    });
+    const tiles = JSON.parse(row.value);
+    io.emit("world:tiles-updated", { tiles });
+    await logAction("system", null, "custom_tiles_restored", { fromBackup: key });
+    res.json({ message: "Backup ripristinato", tiles });
+  } catch (err) {
     res.status(500).json({ error: "Errore interno" });
   }
 });

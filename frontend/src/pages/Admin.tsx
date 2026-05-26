@@ -43,6 +43,7 @@ export default function Admin() {
   const [spells, setSpells] = useState<Spell[]>([]);
   const [showWorldEditor, setShowWorldEditor] = useState(false);
   const [customTiles, setCustomTiles] = useState<{ col: number; row: number; key: string }[]>([]);
+  const [backups, setBackups] = useState<{ key: string; timestamp: number; tiles: { col: number; row: number; key: string }[] }[]>([]);
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -208,6 +209,22 @@ export default function Admin() {
       setCustomTiles(tiles);
       setShowWorldEditor(false);
       setMsg("Mappa salvata! I giocatori vedranno le modifiche.");
+      await loadBackups();
+    } catch (err: unknown) { setError((err as Error).message); }
+  };
+
+  const loadBackups = async () => {
+    try {
+      const b = await api.getCustomTileBackups(password);
+      setBackups(b);
+    } catch {}
+  };
+
+  const handleRestoreBackup = async (key: string) => {
+    try {
+      const r = await api.restoreCustomTileBackup(password, key);
+      setMsg(r.message);
+      await loadAllData();
     } catch (err: unknown) { setError((err as Error).message); }
   };
 
@@ -302,6 +319,18 @@ export default function Admin() {
             APRI EDITOR MAPPA
           </button>
           <p style={{ fontSize: 6, color: "#8888aa", marginTop: 4 }}>{customTiles.length} tile personalizzati piazzati</p>
+        </div>
+
+        <div className="section">
+          <h3>BACKUP MAPPA</h3>
+          <button onClick={loadBackups} style={{ width: "100%", fontSize: 7, marginBottom: 4 }}>CARICA BACKUP</button>
+          {backups.length === 0 && <p style={{ fontSize: 6, color: "#8888aa" }}>Nessun backup trovato</p>}
+          {backups.map(b => (
+            <div key={b.key} className="list-item" style={{ fontSize: 6 }}>
+              <span>{new Date(b.timestamp).toLocaleString()} — {b.tiles.length} tile</span>
+              <button className="admin-mini-btn edit" onClick={() => handleRestoreBackup(b.key)}>RIPRISTINA</button>
+            </div>
+          ))}
         </div>
 
         {/* Eventi Globali */}

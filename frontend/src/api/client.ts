@@ -382,4 +382,20 @@ export const api = {
       headers: { "X-Admin-Password": adminPassword, "Content-Type": "application/json" },
       body: JSON.stringify(tiles),
     }),
+
+  getCustomTileBackups: (adminPassword: string) =>
+    request<{ key: string; timestamp: number; tiles: { col: number; row: number; key: string }[] }[]>("/admin/custom-tiles/backups", {
+      headers: { "X-Admin-Password": adminPassword, "Content-Type": "application/json" },
+    }),
+
+  restoreCustomTileBackup: (adminPassword: string, key: string) =>
+    request<{ message: string }>("/admin/custom-tiles/restore", {
+      method: "POST",
+      headers: { "X-Admin-Password": adminPassword, "Content-Type": "application/json" },
+      body: JSON.stringify({ key }),
+    }),
+
+  // Public — caricamento mappa da gioco
+  fetchCustomTiles: () =>
+    fetch("/api/world/custom-tiles").then(r => r.json()) as Promise<{ col: number; row: number; key: string }[]>,
 };

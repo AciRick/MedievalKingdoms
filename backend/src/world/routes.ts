@@ -88,4 +88,15 @@ router.get("/treaties", async (_req: Request, res: Response): Promise<void> => {
   }
 });
 
+// GET /api/world/custom-tiles — pubblico, caricato dal gioco all'avvio
+router.get("/custom-tiles", async (_req: Request, res: Response): Promise<void> => {
+  try {
+    const row = await prisma.worldSetting.findUnique({ where: { key: "customTiles" } });
+    res.json(row ? JSON.parse(row.value) : []);
+  } catch (err) {
+    console.error("Custom tiles error:", err);
+    res.status(500).json({ error: "Errore interno" });
+  }
+});
+
 export default router;

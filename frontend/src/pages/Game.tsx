@@ -232,6 +232,11 @@ export default function Game() {
               if (s?.drawCustomTiles) s.drawCustomTiles(data.tiles || []);
             });
 
+            api.fetchCustomTiles().then(tiles => {
+              const s = game!.scene.getScene("WorldScene") as any;
+              if (s?.drawCustomTiles && tiles.length > 0) s.drawCustomTiles(tiles);
+            }).catch(() => {});
+
           }
         });
       });
