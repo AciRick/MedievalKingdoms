@@ -92,7 +92,9 @@ router.get("/treaties", async (_req: Request, res: Response): Promise<void> => {
 router.get("/custom-tiles", async (_req: Request, res: Response): Promise<void> => {
   try {
     const row = await prisma.worldSetting.findUnique({ where: { key: "customTiles" } });
-    res.json(row ? JSON.parse(row.value) : []);
+    const tiles = row ? JSON.parse(row.value) : [];
+    console.log(`GET /api/world/custom-tiles → ${tiles.length} tiles`);
+    res.json(tiles);
   } catch (err) {
     console.error("Custom tiles error:", err);
     res.status(500).json({ error: "Errore interno" });

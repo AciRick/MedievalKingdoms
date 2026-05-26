@@ -242,6 +242,7 @@ export class WorldScene extends Phaser.Scene {
   clearWorldItems(): void { for (const [, s] of this.worldItemSprites) s.destroy(); this.worldItemSprites.clear(); }
 
   drawCustomTiles(tiles: { col: number; row: number; key: string }[]): void {
+    console.log("drawCustomTiles called:", tiles.length, "tiles");
     for (const s of this.customTileSprites) s.destroy();
     this.customTileSprites = [];
     for (const t of tiles) {
@@ -251,6 +252,7 @@ export class WorldScene extends Phaser.Scene {
         this.customTileSprites.push(img);
       }
     }
+    console.log("drawCustomTiles rendered:", this.customTileSprites.length, "sprites");
   }
 
   playCombatAnimation(ex: number, ey: number, playerWon: boolean): void {

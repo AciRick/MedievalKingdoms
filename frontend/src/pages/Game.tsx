@@ -233,9 +233,10 @@ export default function Game() {
             });
 
             api.fetchCustomTiles().then(tiles => {
+              console.log("REST tiles loaded:", Array.isArray(tiles) ? tiles.length : "invalid", "tiles");
               const s = game!.scene.getScene("WorldScene") as any;
-              if (s?.drawCustomTiles && tiles.length > 0) s.drawCustomTiles(tiles);
-            }).catch(() => {});
+              if (s?.drawCustomTiles && Array.isArray(tiles) && tiles.length > 0) s.drawCustomTiles(tiles);
+            }).catch(err => console.error("REST tiles ERROR:", err));
 
           }
         });
