@@ -44,6 +44,8 @@ export default function Admin() {
   const [showWorldEditor, setShowWorldEditor] = useState(false);
   const [customTiles, setCustomTiles] = useState<{ col: number; row: number; key: string }[]>([]);
   const [backups, setBackups] = useState<{ key: string; timestamp: number; tiles: { col: number; row: number; key: string }[] }[]>([]);
+  const [npcPositions, setNpcPositions] = useState<{ label: string; x: number; y: number }[]>([]);
+  const [npcEdit, setNpcEdit] = useState<{ label: string; x: number; y: number } | null>(null);
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -228,6 +230,34 @@ export default function Admin() {
     } catch (err: unknown) { setError((err as Error).message); }
   };
 
+  const loadNpcPositions = async () => {
+    try {
+      const p = await api.getNpcPositions(password);
+      setNpcPositions(p);
+    } catch {}
+  };
+
+  const handleSaveNpcPosition = async () => {
+    if (!npcEdit) return;
+    try {
+      const updated = npcPositions.filter(p => p.label !== npcEdit.label);
+      updated.push(npcEdit);
+      await api.saveNpcPositions(password, updated);
+      setNpcPositions(updated);
+      setNpcEdit(null);
+      setMsg("Posizione NPC salvata!");
+    } catch (err: unknown) { setError((err as Error).message); }
+  };
+
+  const handleDeleteNpcPosition = async (label: string) => {
+    try {
+      const updated = npcPositions.filter(p => p.label !== label);
+      await api.saveNpcPositions(password, updated);
+      setNpcPositions(updated);
+      setMsg(`Posizione ${label} resettata`);
+    } catch (err: unknown) { setError((err as Error).message); }
+  };
+
   const drawWorldMap = useCallback(() => {
     const canvas = canvasRef.current;
     if (!canvas || zones.length === 0) return;
@@ -377,6 +407,34 @@ export default function Admin() {
               </div>
             )}
           </div>
+        </div>
+
+        <div className="section">
+          <h3>POSIZIONI NPC</h3>
+          <button onClick={loadNpcPositions} style={{ width: "100%", fontSize: 7, marginBottom: 4 }}>CARICA POSIZIONI</button>
+          {npcPositions.map(p => (
+            <div key={p.label} className="list-item" style={{ fontSize: 6 }}>
+              <span>{p.label} — ({p.x}, {p.y})</span>
+              <span>
+                <button className="admin-mini-btn edit" onClick={() => setNpcEdit({ ...p })}>E</button>
+                <button className="admin-mini-btn delete" onClick={() => handleDeleteNpcPosition(p.label)}>X</button>
+              </span>
+            </div>
+          ))}
+          {npcEdit && (
+            <div style={{ marginTop: 6, padding: 6, background: "#111", border: "1px solid #333" }}>
+              <span style={{ fontSize: 6, color: "#c9a44b" }}>{npcEdit.label}</span>
+              <div className="admin-form-row" style={{ marginTop: 4 }}>
+                <label>X</label><input type="number" value={npcEdit.x} onChange={e => setNpcEdit({ ...npcEdit, x: +e.target.value })} style={{ width: 70 }} />
+                <label style={{ marginLeft: 8 }}>Y</label><input type="number" value={npcEdit.y} onChange={e => setNpcEdit({ ...npcEdit, y: +e.target.value })} style={{ width: 70 }} />
+              </div>
+              <div style={{ display: "flex", gap: 4, marginTop: 4 }}>
+                <button onClick={handleSaveNpcPosition} style={{ fontSize: 6, flex: 1 }}>SALVA</button>
+                <button onClick={() => setNpcEdit(null)} style={{ fontSize: 6 }}>ANNULLA</button>
+              </div>
+            </div>
+          )}
+          <p style={{ fontSize: 5, color: "#888", marginTop: 4 }}>Modifica le coordinate X/Y degli NPC. Salva per applicare a tutti i giocatori.</p>
         </div>
 
         {/* World Editor Canvas */}

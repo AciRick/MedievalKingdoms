@@ -106,6 +106,11 @@ export function setupSocketIO(httpServer: HttpServer): Server {
       socket.emit("world:tiles-list", row ? JSON.parse(row.value) : []);
     });
 
+    socket.on("world:npc-positions-request", async () => {
+      const row = await prisma.worldSetting.findUnique({ where: { key: "npcPositions" } });
+      socket.emit("world:npc-positions-list", row ? JSON.parse(row.value) : []);
+    });
+
     socket.on("item:collect", async (data: { itemId: number }) => {
       const charId = socket.data.characterId;
       if (!charId) {

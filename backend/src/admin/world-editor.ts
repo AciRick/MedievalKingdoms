@@ -352,4 +352,31 @@ router.post("/custom-tiles/restore", async (req: Request, res: Response): Promis
   }
 });
 
+// ─── NPC POSITIONS ──────────────────────────────────────────────────────────
+
+router.get("/npc-positions", async (_req: Request, res: Response): Promise<void> => {
+  try {
+    const row = await prisma.worldSetting.findUnique({ where: { key: "npcPositions" } });
+    res.json(row ? JSON.parse(row.value) : []);
+  } catch (err) {
+    res.status(500).json({ error: "Errore interno" });
+  }
+});
+
+router.put("/npc-positions", async (req: Request, res: Response): Promise<void> => {
+  try {
+    const positions = req.body;
+    await prisma.worldSetting.upsert({
+      where: { key: "npcPositions" },
+      update: { value: JSON.stringify(positions) },
+      create: { key: "npcPositions", value: JSON.stringify(positions) },
+    });
+    await logAction("system", null, "npc_positions_updated", { count: positions.length });
+    io.emit("world:npc-positions-updated", { positions });
+    res.json({ message: "Posizioni NPC salvate", positions });
+  } catch (err) {
+    res.status(500).json({ error: "Errore interno" });
+  }
+});
+
 export default router;

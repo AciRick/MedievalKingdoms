@@ -395,6 +395,18 @@ export const api = {
       body: JSON.stringify({ key }),
     }),
 
+  getNpcPositions: (adminPassword: string) =>
+    request<{ label: string; x: number; y: number }[]>("/admin/npc-positions", {
+      headers: { "X-Admin-Password": adminPassword, "Content-Type": "application/json" },
+    }),
+
+  saveNpcPositions: (adminPassword: string, positions: { label: string; x: number; y: number }[]) =>
+    request<{ message: string }>("/admin/npc-positions", {
+      method: "PUT",
+      headers: { "X-Admin-Password": adminPassword, "Content-Type": "application/json" },
+      body: JSON.stringify(positions),
+    }),
+
   // Public — caricamento mappa da gioco
   fetchCustomTiles: () =>
     fetch("/api/world/custom-tiles").then(r => r.json()) as Promise<{ col: number; row: number; key: string }[]>,

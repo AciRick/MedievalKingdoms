@@ -144,6 +144,7 @@ export class WorldScene extends Phaser.Scene {
   private playerNameLabel!: Phaser.GameObjects.Text;
   private worldItemSprites: Map<number, Phaser.GameObjects.Sprite> = new Map();
   private customTileSprites: Phaser.GameObjects.Image[] = [];
+  private npcPositions: { label: string; x: number; y: number }[] = [];
   private lastDir = "down";
   private earthquakeSpeed = false;
 
@@ -246,6 +247,7 @@ export class WorldScene extends Phaser.Scene {
       if (Math.abs(dx) >= Math.abs(dy)) this.lastDir = dx > 0 ? "right" : "left";
       else this.lastDir = dy > 0 ? "down" : "up";
       this.playerSprite.setTexture(`walk_${this.lastDir}`);
+      this.playerSprite.setDisplaySize(40, 40);
       const n = new Phaser.Math.Vector2(dx, dy).normalize();
       const newX = this.playerSprite.x + n.x * speed * (delta / 1000);
       const newY = this.playerSprite.y + n.y * speed * (delta / 1000);
@@ -364,7 +366,21 @@ export class WorldScene extends Phaser.Scene {
     if (e) { this.tweens.add({ targets: [e.sprite, e.label], alpha: 0, duration: 500, onComplete: () => { e.sprite.destroy(); e.label.destroy(); } }); this.enemySprites = this.enemySprites.filter(es => es.def.id !== enemyId); }
   }
 
-  endCombat(): void { this.combatActive = false; this.movementDisabled = false; }
+  applyNpcPositions(positions: { label: string; x: number; y: number }[]): void {
+    this.npcPositions = positions || [];
+    this.redrawNpcs();
+  }
+
+  redrawNpcs(): void {
+    for (const s of this.npcSprites) { s.sprite.destroy(); }
+    this.npcSprites = [];
+    this.drawNpcs();
+  }
+
+  getNpcPos(label: string): { x: number; y: number } | null {
+    const pos = this.npcPositions.find(p => p.label === label);
+    return pos || null;
+  }
 
   private drawMap(): void {
     const mw = MAP_WIDTH * TILE_SIZE, mh = MAP_HEIGHT * TILE_SIZE;
@@ -476,15 +492,18 @@ export class WorldScene extends Phaser.Scene {
 
   private drawNpcs(): void {
     for (const npc of NPC_DATA) {
+      const pos = this.getNpcPos(npc.label);
+      const x = pos ? pos.x : npc.x;
+      const y = pos ? pos.y : npc.y;
       const spriteKey = NPC_SPRITE_MAP[npc.label] || "npc_char";
       const useMapped = spriteKey !== "npc_char" && this.textures.exists(spriteKey);
       const sprite = useMapped
-        ? this.add.sprite(npc.x, npc.y, spriteKey).setDisplaySize(CHAR_SIZE, CHAR_SIZE)
-        : this.add.sprite(npc.x, npc.y, "npc_char").setDisplaySize(CHAR_SIZE, CHAR_SIZE).setTint(npc.shop ? 0xffcc00 : npc.questBuildingName ? 0x44cc44 : npc.color);
+        ? this.add.sprite(x, y, spriteKey).setDisplaySize(CHAR_SIZE, CHAR_SIZE)
+        : this.add.sprite(x, y, "npc_char").setDisplaySize(CHAR_SIZE, CHAR_SIZE).setTint(npc.shop ? 0xffcc00 : npc.questBuildingName ? 0x44cc44 : npc.color);
       sprite.setDepth(8);
       let lt = npc.label; if (npc.shop) lt += " $"; if (npc.questBuildingName) lt += " !";
-      this.add.text(npc.x, npc.y - 18, lt, { fontFamily: '"Press Start 2P"', fontSize: "4px", color: "#cccccc", backgroundColor: "rgba(0,0,0,0.6)", padding: { x: 2, y: 1 } }).setOrigin(0.5).setDepth(9);
-      this.npcSprites.push({ sprite, def: npc });
+      this.add.text(x, y - 22, lt, { fontFamily: '"Press Start 2P"', fontSize: "6px", color: "#ffffff", backgroundColor: "rgba(0,0,0,0.7)", padding: { x: 3, y: 2 } }).setOrigin(0.5).setDepth(9);
+      this.npcSprites.push({ sprite, def: { ...npc, x, y } });
     }
   }
 
@@ -497,7 +516,7 @@ export class WorldScene extends Phaser.Scene {
         ? this.add.sprite(def.x, def.y, spriteKey).setDisplaySize(CHAR_SIZE, CHAR_SIZE)
         : this.add.sprite(def.x, def.y, "npc_char").setDisplaySize(CHAR_SIZE, CHAR_SIZE).setTint(0xff3333);
       sprite.setDepth(8);
-      const label = this.add.text(def.x, def.y - 18, def.label, { fontFamily: '"Press Start 2P"', fontSize: "4px", color: "#ff6666", backgroundColor: "rgba(0,0,0,0.6)", padding: { x: 2, y: 1 } }).setOrigin(0.5).setDepth(9);
+      const label = this.add.text(def.x, def.y - 22, def.label, { fontFamily: '"Press Start 2P"', fontSize: "6px", color: "#ff6666", backgroundColor: "rgba(0,0,0,0.7)", padding: { x: 3, y: 2 } }).setOrigin(0.5).setDepth(9);
       this.enemySprites.push({ sprite, label, def, originX: def.x, originY: def.y, wanderTarget: { x: def.x, y: def.y }, wanderTimer: 0, chasing: false });
     }
   }

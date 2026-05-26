@@ -247,6 +247,16 @@ export default function Game() {
               if (s?.drawCustomTiles) s.drawCustomTiles(data.tiles || []);
             });
 
+            socket.emit("world:npc-positions-request");
+            socket.on("world:npc-positions-list", (positions: any[]) => {
+              const s = game!.scene.getScene("WorldScene") as any;
+              if (s?.applyNpcPositions) s.applyNpcPositions(positions || []);
+            });
+            socket.on("world:npc-positions-updated", (data: { positions: any[] }) => {
+              const s = game!.scene.getScene("WorldScene") as any;
+              if (s?.applyNpcPositions) s.applyNpcPositions(data.positions || []);
+            });
+
             api.fetchCustomTiles().then(tiles => {
               console.log("REST tiles loaded:", Array.isArray(tiles) ? tiles.length : "invalid", "tiles");
               const s = game!.scene.getScene("WorldScene") as any;
