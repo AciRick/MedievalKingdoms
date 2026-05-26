@@ -109,6 +109,21 @@ const RESOURCE_NODES: ResourceNode[] = [
 
 interface WorldItemDef { id: number; posX: number; posY: number; name: string; type: string; }
 
+const NPC_SPRITE_MAP: Record<string, string> = {
+  Guardia: "spr_guardia", Fabbro: "spr_fabbro",
+  Commerciante: "spr_villaggero", Sacerdotessa: "spr_mago",
+  Mercante: "spr_villaggero", Monaco: "spr_mago",
+  Capitano: "spr_guardia2", Contadina: "spr_villaggero",
+  "Contadino Sud": "spr_villaggero", Oste: "spr_villaggero",
+  Giullare: "spr_villaggero", Pescatore: "spr_villaggero",
+};
+
+const ENEMY_SPRITE_MAP: Record<string, string> = {
+  bandit: "spr_bandito", raider: "spr_vichingo",
+};
+
+const CHAR_SIZE = 28;
+
 export class WorldScene extends Phaser.Scene {
   private playerSprite!: Phaser.GameObjects.Sprite;
   private otherPlayers: Map<number, { sprite: Phaser.GameObjects.Sprite; label: Phaser.GameObjects.Text }> = new Map();
@@ -129,6 +144,7 @@ export class WorldScene extends Phaser.Scene {
   private playerNameLabel!: Phaser.GameObjects.Text;
   private worldItemSprites: Map<number, Phaser.GameObjects.Sprite> = new Map();
   private customTileSprites: Phaser.GameObjects.Image[] = [];
+  private lastDir = "down";
   private earthquakeSpeed = false;
 
   constructor() { super({ key: "WorldScene" }); }
@@ -140,6 +156,41 @@ export class WorldScene extends Phaser.Scene {
       this.load.image(`dung_${n}`, `/assets/tiles/kenney-tiny-dungeon/tile_${n}.png`);
     }
     this.load.image("rpg_0198", "/assets/tiles/kenney-rpg-urban/tile_0198.png");
+
+    // Tiny Dungeon — NPC statici
+    this.load.image("spr_guardia", "/assets/tiles/kenney-tiny-dungeon/tile_0097.png");
+    this.load.image("spr_guardia2", "/assets/tiles/kenney-tiny-dungeon/tile_0098.png");
+    this.load.image("spr_mago", "/assets/tiles/kenney-tiny-dungeon/tile_0084.png");
+    this.load.image("spr_villaggero", "/assets/tiles/kenney-tiny-dungeon/tile_0085.png");
+    this.load.image("spr_fabbro", "/assets/tiles/kenney-tiny-dungeon/tile_0086.png");
+    this.load.image("spr_vichingo", "/assets/tiles/kenney-tiny-dungeon/tile_0087.png");
+    this.load.image("spr_bandito", "/assets/tiles/kenney-tiny-dungeon/tile_0088.png");
+
+    // RPG Urban — Giocatore (marrone, walk)
+    this.load.image("walk_down", "/assets/tiles/kenney-rpg-urban/tile_0401.png");
+    this.load.image("walk_left", "/assets/tiles/kenney-rpg-urban/tile_0402.png");
+    this.load.image("walk_right", "/assets/tiles/kenney-rpg-urban/tile_0403.png");
+    this.load.image("walk_up", "/assets/tiles/kenney-rpg-urban/tile_0404.png");
+
+    // RPG Urban — Altri giocatori (rosso)
+    this.load.image("other_walk_down", "/assets/tiles/kenney-rpg-urban/tile_0131.png");
+    this.load.image("other_walk_left", "/assets/tiles/kenney-rpg-urban/tile_0132.png");
+    this.load.image("other_walk_right", "/assets/tiles/kenney-rpg-urban/tile_0133.png");
+    this.load.image("other_walk_up", "/assets/tiles/kenney-rpg-urban/tile_0134.png");
+    this.load.image("other_idle_down", "/assets/tiles/kenney-rpg-urban/tile_0104.png");
+    this.load.image("other_idle_left", "/assets/tiles/kenney-rpg-urban/tile_0105.png");
+    this.load.image("other_idle_right", "/assets/tiles/kenney-rpg-urban/tile_0106.png");
+    this.load.image("other_idle_up", "/assets/tiles/kenney-rpg-urban/tile_0107.png");
+
+    // RPG Urban — NPC villaggio (verde)
+    this.load.image("npc_walk_down", "/assets/tiles/kenney-rpg-urban/tile_0050.png");
+    this.load.image("npc_walk_left", "/assets/tiles/kenney-rpg-urban/tile_0051.png");
+    this.load.image("npc_walk_right", "/assets/tiles/kenney-rpg-urban/tile_0052.png");
+    this.load.image("npc_walk_up", "/assets/tiles/kenney-rpg-urban/tile_0053.png");
+    this.load.image("npc_idle_down", "/assets/tiles/kenney-rpg-urban/tile_0023.png");
+    this.load.image("npc_idle_left", "/assets/tiles/kenney-rpg-urban/tile_0024.png");
+    this.load.image("npc_idle_right", "/assets/tiles/kenney-rpg-urban/tile_0025.png");
+    this.load.image("npc_idle_up", "/assets/tiles/kenney-rpg-urban/tile_0026.png");
   }
 
   create(): void {
@@ -192,6 +243,9 @@ export class WorldScene extends Phaser.Scene {
     }
 
     if (dx !== 0 || dy !== 0) {
+      if (Math.abs(dx) >= Math.abs(dy)) this.lastDir = dx > 0 ? "right" : "left";
+      else this.lastDir = dy > 0 ? "down" : "up";
+      this.playerSprite.setTexture(`walk_${this.lastDir}`);
       const n = new Phaser.Math.Vector2(dx, dy).normalize();
       const newX = this.playerSprite.x + n.x * speed * (delta / 1000);
       const newY = this.playerSprite.y + n.y * speed * (delta / 1000);
@@ -218,11 +272,24 @@ export class WorldScene extends Phaser.Scene {
 
   addOtherPlayer(characterId: number, name: string, x: number, y: number): void {
     if (this.otherPlayers.has(characterId)) return;
-    const sprite = this.add.sprite(x, y, "other_char").setDepth(9);
+    const key = this.textures.exists("other_idle_down") ? "other_idle_down" : "other_char";
+    const sprite = this.add.sprite(x, y, key).setDepth(9);
+    if (this.textures.exists("other_idle_down")) sprite.setDisplaySize(CHAR_SIZE, CHAR_SIZE);
     const label = this.add.text(x, y - 18, name, { fontFamily: '"Press Start 2P"', fontSize: "5px", color: "#ffffff", backgroundColor: "rgba(0,0,0,0.7)", padding: { x: 2, y: 1 } }).setOrigin(0.5).setDepth(11);
     this.otherPlayers.set(characterId, { sprite, label });
   }
-  moveOtherPlayer(characterId: number, x: number, y: number): void { const e = this.otherPlayers.get(characterId); if (e) { e.sprite.x = x; e.sprite.y = y; e.label.x = x; e.label.y = y - 18; } }
+  moveOtherPlayer(characterId: number, x: number, y: number): void {
+    const e = this.otherPlayers.get(characterId);
+    if (e) {
+      const dx = x - e.sprite.x, dy = y - e.sprite.y;
+      if (dx !== 0 || dy !== 0) {
+        const dir = Math.abs(dx) >= Math.abs(dy) ? (dx > 0 ? "right" : "left") : (dy > 0 ? "down" : "up");
+        const tex = `other_walk_${dir}`;
+        if (this.textures.exists(tex)) e.sprite.setTexture(tex);
+      }
+      e.sprite.x = x; e.sprite.y = y; e.label.x = x; e.label.y = y - 18;
+    }
+  }
   removeOtherPlayer(characterId: number): void { const e = this.otherPlayers.get(characterId); if (e) { e.sprite.destroy(); e.label.destroy(); this.otherPlayers.delete(characterId); } }
 
   spawnWorldItem(item: WorldItemDef): void {
@@ -409,18 +476,28 @@ export class WorldScene extends Phaser.Scene {
 
   private drawNpcs(): void {
     for (const npc of NPC_DATA) {
-      const tint = npc.shop ? 0xffcc00 : npc.questBuildingName ? 0x44cc44 : npc.color;
-      const sprite = this.add.sprite(npc.x, npc.y, "npc_char").setTint(tint).setDepth(8);
+      const spriteKey = NPC_SPRITE_MAP[npc.label] || "npc_char";
+      const useMapped = spriteKey !== "npc_char" && this.textures.exists(spriteKey);
+      const sprite = useMapped
+        ? this.add.sprite(npc.x, npc.y, spriteKey).setDisplaySize(CHAR_SIZE, CHAR_SIZE)
+        : this.add.sprite(npc.x, npc.y, "npc_char").setDisplaySize(CHAR_SIZE, CHAR_SIZE).setTint(npc.shop ? 0xffcc00 : npc.questBuildingName ? 0x44cc44 : npc.color);
+      sprite.setDepth(8);
       let lt = npc.label; if (npc.shop) lt += " $"; if (npc.questBuildingName) lt += " !";
-      this.add.text(npc.x, npc.y - 16, lt, { fontFamily: '"Press Start 2P"', fontSize: "4px", color: "#cccccc", backgroundColor: "rgba(0,0,0,0.6)", padding: { x: 2, y: 1 } }).setOrigin(0.5).setDepth(9);
+      this.add.text(npc.x, npc.y - 18, lt, { fontFamily: '"Press Start 2P"', fontSize: "4px", color: "#cccccc", backgroundColor: "rgba(0,0,0,0.6)", padding: { x: 2, y: 1 } }).setOrigin(0.5).setDepth(9);
       this.npcSprites.push({ sprite, def: npc });
     }
   }
 
   private drawEnemies(): void {
     for (const def of ENEMY_DATA) {
-      const sprite = this.add.sprite(def.x, def.y, "npc_char").setTint(0xff3333).setDepth(8);
-      const label = this.add.text(def.x, def.y - 16, def.label, { fontFamily: '"Press Start 2P"', fontSize: "4px", color: "#ff6666", backgroundColor: "rgba(0,0,0,0.6)", padding: { x: 2, y: 1 } }).setOrigin(0.5).setDepth(9);
+      const cat = def.id.startsWith("bandit") ? "bandit" : def.id.startsWith("raider") ? "raider" : "";
+      const spriteKey = ENEMY_SPRITE_MAP[cat] || "npc_char";
+      const useMapped = spriteKey !== "npc_char" && this.textures.exists(spriteKey);
+      const sprite = useMapped
+        ? this.add.sprite(def.x, def.y, spriteKey).setDisplaySize(CHAR_SIZE, CHAR_SIZE)
+        : this.add.sprite(def.x, def.y, "npc_char").setDisplaySize(CHAR_SIZE, CHAR_SIZE).setTint(0xff3333);
+      sprite.setDepth(8);
+      const label = this.add.text(def.x, def.y - 18, def.label, { fontFamily: '"Press Start 2P"', fontSize: "4px", color: "#ff6666", backgroundColor: "rgba(0,0,0,0.6)", padding: { x: 2, y: 1 } }).setOrigin(0.5).setDepth(9);
       this.enemySprites.push({ sprite, label, def, originX: def.x, originY: def.y, wanderTarget: { x: def.x, y: def.y }, wanderTimer: 0, chasing: false });
     }
   }

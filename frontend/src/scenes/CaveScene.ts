@@ -159,8 +159,12 @@ export class CaveScene extends Phaser.Scene {
 
   private drawCaveEnemies(): void {
     for (const def of CAVE_ENEMIES) {
-      const sprite = this.add.sprite(def.x, def.y, "npc_char").setTint(0xff4444).setDepth(8);
-      const label = this.add.text(def.x, def.y - 16, def.label, {
+      const hasSpr = this.textures.exists("spr_bandito");
+      const sprite = hasSpr
+        ? this.add.sprite(def.x, def.y, "spr_bandito").setDisplaySize(28, 28)
+        : this.add.sprite(def.x, def.y, "npc_char").setDisplaySize(28, 28).setTint(0xff4444);
+      sprite.setDepth(8);
+      const label = this.add.text(def.x, def.y - 18, def.label, {
         fontFamily: '"Press Start 2P"', fontSize: "4px", color: "#ff6666",
         backgroundColor: "rgba(0,0,0,0.6)", padding: { x: 2, y: 1 },
       }).setOrigin(0.5).setDepth(9);
