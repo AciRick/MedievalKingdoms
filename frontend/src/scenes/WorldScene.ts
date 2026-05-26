@@ -338,13 +338,9 @@ export class WorldScene extends Phaser.Scene {
     let rendered = 0;
     for (const t of tiles) {
       if (this.textures.exists(t.key)) {
-        const zoneColor = this.getZoneColor(t.col, t.row);
-        const bg = this.add.rectangle(t.col * TILE_SIZE + TILE_SIZE / 2, t.row * TILE_SIZE + TILE_SIZE / 2, TILE_SIZE + 2, TILE_SIZE + 2, zoneColor);
-        bg.setDepth(5.1);
-        this.customTileSprites.push(bg as any);
         const img = this.add.image(t.col * TILE_SIZE + TILE_SIZE / 2, t.row * TILE_SIZE + TILE_SIZE / 2, t.key);
-        img.setScale(2).setDepth(6);
-        this.customTileSprites.push(img as any);
+        img.setDisplaySize(TILE_SIZE, TILE_SIZE).setDepth(6);
+        this.customTileSprites.push(img);
         rendered++;
       }
     }
@@ -381,7 +377,7 @@ export class WorldScene extends Phaser.Scene {
       const ts = this.add.tileSprite(zx + zw / 2, zy + zh / 2, zw, zh, t).setDepth(2);
       ts.setDisplaySize(zw, zh);
     }
-    this.drawWall(); this.drawBuildings(); this.drawTrees(); this.drawWater(); this.drawVillageWater(); this.drawZoneLabels(); this.drawTerrainVariety();
+    this.drawWall(); this.drawTrees(); this.drawZoneLabels();
   }
 
   private drawWall(): void {
@@ -622,16 +618,6 @@ export class WorldScene extends Phaser.Scene {
     if (row === 14 && col >= 161 && col <= 215) return true;
     if (row === 55 && col >= 161 && col <= 215) return true;
     return false;
-  }
-
-  getZoneColor(col: number, row: number): number {
-    const zone = this.getZoneAt(col * TILE_SIZE + TILE_SIZE / 2, row * TILE_SIZE + TILE_SIZE / 2);
-    const colors: Record<string, number> = {
-      VillageA: 0x4a7c59, VillageB: 0x5a6b8a, NoMansLand: 0x6b5b3a,
-      Abbey: 0x8a7a9a, Forest: 0x2d5a27, DeepForest: 0x1d3a17,
-      Coast: 0x3a6b8a, Lake: 0x4a8a9a, Mountains: 0x5a4a3a,
-    };
-    return colors[zone] || 0x333333;
   }
 
   private generateCharacterTextures(): void {
