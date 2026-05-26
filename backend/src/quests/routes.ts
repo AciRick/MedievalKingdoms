@@ -19,11 +19,9 @@ const defaultTemplates = [
 ];
 
 async function ensureTemplates(): Promise<void> {
-  const count = await prisma.questTemplate.count();
-  if (count === 0) {
-    for (const t of defaultTemplates) {
-      await prisma.questTemplate.create({ data: t });
-    }
+  for (const t of defaultTemplates) {
+    const existing = await prisma.questTemplate.findFirst({ where: { buildingName: t.buildingName } });
+    if (!existing) await prisma.questTemplate.create({ data: t });
   }
 }
 
