@@ -20,6 +20,21 @@ interface GatheringState { resourceLabel: string; gatherTime: number; }
 interface ShopDialog { npcName: string; dialog: string; resourceName: string; resourceLabel: string; sellPrice: number; }
 interface RestDialog { label: string; free?: boolean; }
 
+const NPC_PORTRAIT_SRC: Record<string, string> = {
+  Guardia: "/assets/tiles/kenney-tiny-dungeon/tile_0097.png",
+  Fabbro: "/assets/tiles/kenney-tiny-dungeon/tile_0086.png",
+  Commerciante: "/assets/tiles/kenney-tiny-dungeon/tile_0085.png",
+  Sacerdotessa: "/assets/tiles/kenney-tiny-dungeon/tile_0084.png",
+  Mercante: "/assets/tiles/kenney-tiny-dungeon/tile_0085.png",
+  Monaco: "/assets/tiles/kenney-tiny-dungeon/tile_0084.png",
+  Capitano: "/assets/tiles/kenney-tiny-dungeon/tile_0098.png",
+  Contadina: "/assets/tiles/kenney-tiny-dungeon/tile_0085.png",
+  "Contadino Sud": "/assets/tiles/kenney-tiny-dungeon/tile_0085.png",
+  Oste: "/assets/tiles/kenney-tiny-dungeon/tile_0085.png",
+  Giullare: "/assets/tiles/kenney-tiny-dungeon/tile_0085.png",
+  Pescatore: "/assets/tiles/kenney-tiny-dungeon/tile_0085.png",
+};
+
 export default function Game() {
   const { user, selectedCharacter } = useAuthStore();
   const navigate = useNavigate();
@@ -352,8 +367,15 @@ export default function Game() {
       {npcDialog && !npcDialog.shop && !npcDialog.questBuildingName && (
         <div className="modal-overlay" onClick={closeNpcDialog}><div className="npc-dialog-panel" onClick={(e) => e.stopPropagation()}>
           <button className="close-btn" onClick={closeNpcDialog}>X</button>
-          <h2 className="panel-title" style={{ color: "#c9a44b", marginBottom: 8 }}>{npcDialog.name}</h2>
-          <p style={{ fontSize: 8, lineHeight: 2, color: "#e0e0e0" }}>{npcDialog.dialog}</p>
+          <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
+            {NPC_PORTRAIT_SRC[npcDialog.name] && (
+              <img src={NPC_PORTRAIT_SRC[npcDialog.name]} alt="" style={{ width: 64, height: 64, imageRendering: "pixelated", flexShrink: 0, border: "2px solid #c9a44b" }} />
+            )}
+            <div style={{ flex: 1 }}>
+              <h2 className="panel-title" style={{ color: "#c9a44b", marginBottom: 8 }}>{npcDialog.name}</h2>
+              <p style={{ fontSize: 8, lineHeight: 2, color: "#e0e0e0" }}>{npcDialog.dialog}</p>
+            </div>
+          </div>
         </div></div>
       )}
 
@@ -363,16 +385,23 @@ export default function Game() {
         return (
           <div className="modal-overlay" onClick={closeNpcDialog}><div className="npc-dialog-panel" onClick={(e) => e.stopPropagation()}>
             <button className="close-btn" onClick={closeNpcDialog}>X</button>
-            <h2 className="panel-title" style={{ color: "#c9a44b", marginBottom: 8 }}>{npcDialog.name}</h2>
-            {aq ? (<>
-              <p style={{ fontSize: 8, lineHeight: 2, color: "#e0e0e0", marginBottom: 8 }}>Hai raccolto {aq.progress}/{tpl!.targetAmount} {tpl!.resourceLabel}. Ricompensa: {tpl!.goldReward} oro + {tpl!.itemRewardName}.</p>
-              <div className="hp-bar" style={{ marginBottom: 8 }}><div className="hp-bar-fill" style={{ width: `${Math.min((aq.progress / tpl!.targetAmount) * 100, 100)}%`, background: "#c9a44b", height: 8 }} /></div>
-              <div className="modal-actions" style={{ flexWrap: "wrap" }}>
-                <button className="success" style={{ fontSize: 7 }} onClick={handleDeliverQuest}>CONSEGNA</button>
-                <button className="danger" style={{ fontSize: 7 }} onClick={handleAbandonQuest}>ABBANDONA</button>
-                <button onClick={closeNpcDialog} style={{ fontSize: 7 }}>CHIUDI</button>
+            <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
+              {NPC_PORTRAIT_SRC[npcDialog.name] && (
+                <img src={NPC_PORTRAIT_SRC[npcDialog.name]} alt="" style={{ width: 64, height: 64, imageRendering: "pixelated", flexShrink: 0, border: "2px solid #c9a44b" }} />
+              )}
+              <div style={{ flex: 1 }}>
+                <h2 className="panel-title" style={{ color: "#c9a44b", marginBottom: 8 }}>{npcDialog.name}</h2>
+                {aq ? (<>
+                  <p style={{ fontSize: 8, lineHeight: 2, color: "#e0e0e0", marginBottom: 8 }}>Hai raccolto {aq.progress}/{tpl!.targetAmount} {tpl!.resourceLabel}. Ricompensa: {tpl!.goldReward} oro + {tpl!.itemRewardName}.</p>
+                  <div className="hp-bar" style={{ marginBottom: 8 }}><div className="hp-bar-fill" style={{ width: `${Math.min((aq.progress / tpl!.targetAmount) * 100, 100)}%`, background: "#c9a44b", height: 8 }} /></div>
+                  <div className="modal-actions" style={{ flexWrap: "wrap" }}>
+                    <button className="success" style={{ fontSize: 7 }} onClick={handleDeliverQuest}>CONSEGNA</button>
+                    <button className="danger" style={{ fontSize: 7 }} onClick={handleAbandonQuest}>ABBANDONA</button>
+                    <button onClick={closeNpcDialog} style={{ fontSize: 7 }}>CHIUDI</button>
+                  </div>
+                </>) : (<p style={{ fontSize: 8, lineHeight: 2, color: "#e0e0e0" }}>{npcDialog.dialog}</p>)}
               </div>
-            </>) : (<p style={{ fontSize: 8, lineHeight: 2, color: "#e0e0e0" }}>{npcDialog.dialog}</p>)}
+            </div>
           </div></div>
         );
       })()}
