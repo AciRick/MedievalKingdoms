@@ -642,7 +642,7 @@ export default function Admin() {
     {showWorldEditor && (
       <WorldEditor tiles={customTiles} onSave={handleSaveWorldTiles} onClose={() => setShowWorldEditor(false)}
         npcPositions={npcPositions.map(p => ({ ...p, hasQuest: ["Guardia","Fabbro","Mercante","Commerciante","Contadina","Contadino Sud","Monaco","Capitano","Pescatore"].includes(p.label), hasShop: ["Oste","Pescatore"].includes(p.label) }))}
-        onSaveNpc={async (positions) => { await api.saveNpcPositions(password, positions); setNpcPositions(positions); setMsg("NPC spostati!"); }} />
+        onSaveNpc={async (positions) => { try { await api.saveNpcPositions(password, positions); setNpcPositions(positions); setMsg("NPC spostati!"); } catch (err: unknown) { setError((err as Error).message); } }} />
     )}
     </>
   );

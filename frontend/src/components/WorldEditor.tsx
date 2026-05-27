@@ -147,9 +147,10 @@ export default function WorldEditor({ tiles, onSave, onClose, npcPositions, onSa
   const handleTileClick = (globalCol: number, globalRow: number) => {
     if (npcTool && selectedNpc) {
       setEditNpc(prev => prev.map(n => n.label === selectedNpc ? { ...n, x: Math.round(globalCol * 32 + 16), y: Math.round(globalRow * 32 + 16) } : n));
-      setSelectedNpc(null); setNpcTool(false);
+      setSelectedNpc(null);
       return;
     }
+    if (npcTool) return;
     if (selectedTile === "__eraser") {
       setEditTiles(prev => prev.filter(t => !(t.col === globalCol && t.row === globalRow)));
     } else {
@@ -210,8 +211,8 @@ export default function WorldEditor({ tiles, onSave, onClose, npcPositions, onSa
         const isSelected = selectedNpc === n.label;
         return (
           <div key={n.label}
-            onClick={e => { e.stopPropagation(); if (npcTool) { setSelectedNpc(n.label === selectedNpc ? null : n.label); } else { setSelectedNpc(n.label); } }}
-            title={`${n.label} (${n.x},${n.y}) - ${npcTool ? "clicca tile per spostare" : "attiva ✋ per spostare"}`}
+            onClick={e => { e.stopPropagation(); if (npcTool) { setSelectedNpc(n.label === selectedNpc ? null : n.label); } }}
+            title={`${n.label} (${n.x},${n.y})`}
             style={{
               position: "absolute", left: (lc - startCol) * 32 * zoom - 8, top: (lr - startRow) * 32 * zoom - 8,
               width: 16, height: 16, background: color, border: isSelected ? "3px solid #fff" : "2px solid #fff", borderRadius: "50%",
