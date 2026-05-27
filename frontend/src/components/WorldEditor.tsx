@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 
 interface Tile { col: number; row: number; key: string; }
 
@@ -117,9 +117,9 @@ const ALL_TILES: { key: string; src: string; label: string }[] = (() => {
   return t;
 })();
 
-interface Props { tiles: Tile[]; onSave: (tiles: Tile[]) => void; onClose: () => void; }
+interface Props { tiles: Tile[]; onSave: (tiles: Tile[]) => void; onClose: () => void; npcPositions?: { label: string; x: number; y: number; hasQuest?: boolean; hasShop?: boolean }[]; onSaveNpc?: (positions: { label: string; x: number; y: number }[]) => void; }
 
-export default function WorldEditor({ tiles, onSave, onClose }: Props) {
+export default function WorldEditor({ tiles, onSave, onClose, npcPositions, onSaveNpc }: Props) {
   const [mode, setMode] = useState<"overview" | "section" | "zone">("overview");
   const [section, setSection] = useState({ cx: 0, cy: 0 });
   const [activeZone, setActiveZone] = useState("");
@@ -127,6 +127,8 @@ export default function WorldEditor({ tiles, onSave, onClose }: Props) {
   const [selectedTile, setSelectedTile] = useState(ALL_TILES[0]?.key || "");
   const [zoom, setZoom] = useState(1);
   const [versions, setVersions] = useState<{ time: string; desc: string; tiles: Tile[] }[]>([{ time: new Date().toLocaleTimeString(), desc: "Apertura", tiles: [...tiles] }]);
+  const [editNpc, setEditNpc] = useState(npcPositions || []);
+  const [draggingNpc, setDraggingNpc] = useState<string | null>(null);
   const zoneScrollRef = useRef<HTMLDivElement>(null);
 
   const addVersion = (desc: string, t: Tile[]) => setVersions(v => [...v, { time: new Date().toLocaleTimeString(), desc, tiles: [...t] }]);
@@ -176,6 +178,7 @@ export default function WorldEditor({ tiles, onSave, onClose }: Props) {
       grid.push(rowTiles);
     }
     return (
+      <div style={{ position: "relative", display: "inline-block" }}>
       <div style={{ display: "grid", gridTemplateColumns: `repeat(${cols}, ${32 * zoom}px)`, gap: 0, lineHeight: 0, background: "#000" }}>
         {grid.map((row, ri) =>
           row.map((tile) => (
@@ -194,12 +197,44 @@ export default function WorldEditor({ tiles, onSave, onClose }: Props) {
           ))
         )}
       </div>
+      {editNpc.map(n => {
+        const lc = n.x / 32, lr = n.y / 32;
+        if (lc < startCol || lc >= startCol + cols || lr < startRow || lr >= startRow + rows) return null;
+        const color = n.hasShop ? "#ffcc00" : n.hasQuest ? "#44cc44" : "#4488ff";
+        return (
+          <div key={n.label}
+            onMouseDown={e => { e.preventDefault(); setDraggingNpc(n.label); }}
+            style={{
+              position: "absolute", left: (lc - startCol) * 32 * zoom - 8, top: (lr - startRow) * 32 * zoom - 8,
+              width: 16, height: 16, background: color, border: "2px solid #fff", borderRadius: "50%",
+              cursor: "grab", zIndex: 10, display: "flex", alignItems: "center", justifyContent: "center",
+            }}>
+            <span style={{ fontSize: 6, color: "#fff", pointerEvents: "none", marginTop: 16 }}>{n.label.substring(0,4)}</span>
+          </div>
+        );
+      })}
+      </div>
     );
   };
 
   const handleWheel = (e: React.WheelEvent) => {
     if (e.ctrlKey) { e.preventDefault(); setZoom(z => Math.max(0.25, Math.min(4, z + (e.deltaY < 0 ? 0.25 : -0.25)))); }
   };
+
+  useEffect(() => {
+    if (!draggingNpc) return;
+    const onMove = (e: MouseEvent) => {
+      const container = zoneScrollRef.current || document.body;
+      const rect = container.getBoundingClientRect();
+      const x = e.clientX - rect.left + container.scrollLeft;
+      const y = e.clientY - rect.top + container.scrollTop;
+      setEditNpc(prev => prev.map(n => n.label === draggingNpc ? { ...n, x: Math.round(x), y: Math.round(y) } : n));
+    };
+    const onUp = () => setDraggingNpc(null);
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onUp);
+    return () => { window.removeEventListener("mousemove", onMove); window.removeEventListener("mouseup", onUp); };
+  }, [draggingNpc]);
 
   if (mode === "section") {
     const startCol = section.cx * CHUNK_W, startRow = section.cy * CHUNK_H;
@@ -211,7 +246,7 @@ export default function WorldEditor({ tiles, onSave, onClose }: Props) {
           <button onClick={() => setMode("overview")} style={{ fontSize: 7, marginRight: 8 }}>◀ TORNA</button>
           <span style={{ color: "#c9a44b", fontSize: 8 }}>Sezione ({section.cx},{section.cy}) — {editTiles.length} tile</span>
           <div style={{ flex: 1 }} />
-          <button style={{ fontSize: 7 }} onClick={() => { addVersion("Salvato", editTiles); onSave(editTiles); }}>💾 SALVA</button>
+          <button style={{ fontSize: 7 }} onClick={() => { addVersion("Salvato", editTiles); onSave(editTiles); if (onSaveNpc) onSaveNpc(editNpc); }}>💾 SALVA</button>
           <button className="danger" style={{ fontSize: 7, marginLeft: 4 }} onClick={() => { if (versions.length > 0) setEditTiles(versions[versions.length - 1].tiles); }}>↩ RIPRISTINA</button>
         </div>
           <div style={{ display: "flex", gap: 6, flex: 1, overflow: "hidden" }}>
@@ -282,7 +317,7 @@ export default function WorldEditor({ tiles, onSave, onClose }: Props) {
         <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
           <h2 style={{ color: "#c9a44b", fontSize: 12, margin: 0, flex: 1 }}>EDITOR MAPPA</h2>
           <span style={{ color: "#888", fontSize: 7 }}>{editTiles.length} tile custom</span>
-          <button style={{ fontSize: 7 }} onClick={() => { addVersion("Salvato", editTiles); onSave(editTiles); }}>💾 SALVA</button>
+          <button style={{ fontSize: 7 }} onClick={() => { addVersion("Salvato", editTiles); onSave(editTiles); if (onSaveNpc) onSaveNpc(editNpc); }}>💾 SALVA</button>
           <button style={{ fontSize: 7 }} onClick={onClose}>CHIUDI</button>
         </div>
 
