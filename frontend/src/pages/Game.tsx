@@ -199,9 +199,7 @@ export default function Game() {
     if (!socket) return;
     const handler = (data: any) => {
       const positions = Array.isArray(data) ? data : (data?.positions || []);
-      console.log("Game.tsx NPC handler received:", positions.length, "items");
-      const s = gameRef.current?.scene?.getScene("WorldScene") as any;
-      if (s?.applyNpcPositions) s.applyNpcPositions(positions);
+      window.dispatchEvent(new CustomEvent("world:npc-positions-updated", { detail: positions }));
     };
     socket.emit("world:npc-positions-request");
     socket.on("world:npc-positions-list", handler);

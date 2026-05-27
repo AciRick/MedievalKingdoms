@@ -227,6 +227,10 @@ export class WorldScene extends Phaser.Scene {
     window.addEventListener("phaser:disable-movement", () => { this.movementDisabled = true; });
     window.addEventListener("phaser:enable-movement", () => { this.movementDisabled = false; });
     window.addEventListener("phaser:gathering-cancel", () => { this.gatheringActive = false; this.movementDisabled = false; });
+    window.addEventListener("world:npc-positions-updated", (e: Event) => {
+      const positions = (e as CustomEvent).detail;
+      this.applyNpcPositions(positions);
+    });
   }
 
   update(_time: number, delta: number): void {
@@ -375,6 +379,7 @@ export class WorldScene extends Phaser.Scene {
   redrawNpcs(): void {
     for (const s of this.npcSprites) { s.sprite.destroy(); }
     this.npcSprites = [];
+    this.children.each(c => { if ((c as any).depth === 9 && (c as any).text !== undefined) c.destroy(); });
     this.drawNpcs();
   }
 
