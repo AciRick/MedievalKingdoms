@@ -14,6 +14,15 @@ interface ZoneRow {
 }
 interface Spell { id: number; name: string; description: string; manaCost: number; }
 
+const DEFAULT_NPC_POSITIONS = [
+  { label: "Mercante", x: 400, y: 600 }, { label: "Guardia", x: 200, y: 700 },
+  { label: "Fabbro", x: 180, y: 550 }, { label: "Oste", x: 500, y: 650 },
+  { label: "Giullare", x: 350, y: 580 }, { label: "Contadina", x: 300, y: 720 },
+  { label: "Monaco", x: 2100, y: 280 }, { label: "Commerciante", x: 5200, y: 700 },
+  { label: "Sacerdotessa", x: 5150, y: 620 }, { label: "Capitano", x: 5400, y: 750 },
+  { label: "Pescatore", x: 5800, y: 900 }, { label: "Contadino Sud", x: 5250, y: 850 },
+];
+
 function BackupPreview({ tiles }: { tiles: { col: number; row: number; key: string }[] }) {
   const ref = useRef<HTMLCanvasElement>(null);
   useEffect(() => {
@@ -247,8 +256,8 @@ export default function Admin() {
   const loadNpcPositions = async () => {
     try {
       const p = await api.getNpcPositions(password);
-      setNpcPositions(p);
-    } catch (err) { console.error("loadNpcPositions error:", err); }
+      setNpcPositions(p.length > 0 ? p : DEFAULT_NPC_POSITIONS);
+    } catch (err) { console.error("loadNpcPositions error:", err); setNpcPositions(DEFAULT_NPC_POSITIONS); }
   };
 
   const handleSaveNpcPosition = async () => {
@@ -429,6 +438,7 @@ export default function Admin() {
         <div className="section">
           <h3>POSIZIONI NPC</h3>
           <button onClick={loadNpcPositions} style={{ width: "100%", fontSize: 7, marginBottom: 4 }}>CARICA POSIZIONI</button>
+          {npcPositions.length === 0 && <p style={{ fontSize: 6, color: "#8888aa" }}>Nessuna posizione NPC salvata</p>}
           {npcPositions.map(p => (
             <div key={p.label} className="list-item" style={{ fontSize: 6 }}>
               <span>{p.label} — ({p.x}, {p.y})</span>
