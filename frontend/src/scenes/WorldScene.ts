@@ -367,6 +367,7 @@ export class WorldScene extends Phaser.Scene {
   }
 
   applyNpcPositions(positions: { label: string; x: number; y: number }[]): void {
+    console.log("applyNpcPositions received:", positions.length, "positions", positions);
     this.npcPositions = positions || [];
     this.redrawNpcs();
   }

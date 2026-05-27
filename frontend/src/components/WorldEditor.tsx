@@ -145,6 +145,7 @@ export default function WorldEditor({ tiles, onSave, onClose, npcPositions, onSa
   };
 
   const handleTileClick = (globalCol: number, globalRow: number) => {
+    console.log("handleTileClick: npcTool=", npcTool, "selectedNpc=", selectedNpc, "selectedTile=", selectedTile);
     if (npcTool && selectedNpc) {
       setEditNpc(prev => prev.map(n => n.label === selectedNpc ? { ...n, x: Math.round(globalCol * 32 + 16), y: Math.round(globalRow * 32 + 16) } : n));
       setSelectedNpc(null);
@@ -241,7 +242,7 @@ export default function WorldEditor({ tiles, onSave, onClose, npcPositions, onSa
           <button onClick={() => setMode("overview")} style={{ fontSize: 7, marginRight: 8 }}>◀ TORNA</button>
           <span style={{ color: "#c9a44b", fontSize: 8 }}>Sezione ({section.cx},{section.cy}) — {editTiles.length} tile</span>
           <div style={{ flex: 1 }} />
-          <button style={{ fontSize: 7 }} onClick={() => { addVersion("Salvato", editTiles); onSave(editTiles); if (onSaveNpc) onSaveNpc(editNpc); }}>💾 SALVA</button>
+          <button style={{ fontSize: 7 }} onClick={() => { console.log("SAVE: tiles=", editTiles.length, "npc=", editNpc.length, editNpc); addVersion("Salvato", editTiles); onSave(editTiles); if (onSaveNpc) onSaveNpc(editNpc); }}>💾 SALVA</button>
           <button className="danger" style={{ fontSize: 7, marginLeft: 4 }} onClick={() => { if (versions.length > 0) setEditTiles(versions[versions.length - 1].tiles); }}>↩ RIPRISTINA</button>
         </div>
           <div style={{ display: "flex", gap: 6, flex: 1, overflow: "hidden" }}>
@@ -322,7 +323,7 @@ export default function WorldEditor({ tiles, onSave, onClose, npcPositions, onSa
         <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
           <h2 style={{ color: "#c9a44b", fontSize: 12, margin: 0, flex: 1 }}>EDITOR MAPPA</h2>
           <span style={{ color: "#888", fontSize: 7 }}>{editTiles.length} tile custom</span>
-          <button style={{ fontSize: 7 }} onClick={() => { addVersion("Salvato", editTiles); onSave(editTiles); if (onSaveNpc) onSaveNpc(editNpc); }}>💾 SALVA</button>
+          <button style={{ fontSize: 7 }} onClick={() => { console.log("SAVE: tiles=", editTiles.length, "npc=", editNpc.length, editNpc); addVersion("Salvato", editTiles); onSave(editTiles); if (onSaveNpc) onSaveNpc(editNpc); }}>💾 SALVA</button>
           <button style={{ fontSize: 7 }} onClick={onClose}>CHIUDI</button>
         </div>
 

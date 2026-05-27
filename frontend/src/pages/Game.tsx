@@ -198,6 +198,7 @@ export default function Game() {
     const socket = getSocket();
     if (!socket) return;
     const handler = (positions: any[]) => {
+      console.log("Game.tsx NPC handler received:", Array.isArray(positions) ? positions.length : "notArray", "items");
       const s = gameRef.current?.scene?.getScene("WorldScene") as any;
       if (s?.applyNpcPositions) s.applyNpcPositions(positions || []);
     };
