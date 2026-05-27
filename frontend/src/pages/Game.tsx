@@ -197,10 +197,11 @@ export default function Game() {
   useEffect(() => {
     const socket = getSocket();
     if (!socket) return;
-    const handler = (positions: any[]) => {
-      console.log("Game.tsx NPC handler received:", Array.isArray(positions) ? positions.length : "notArray", "items");
+    const handler = (data: any) => {
+      const positions = Array.isArray(data) ? data : (data?.positions || []);
+      console.log("Game.tsx NPC handler received:", positions.length, "items");
       const s = gameRef.current?.scene?.getScene("WorldScene") as any;
-      if (s?.applyNpcPositions) s.applyNpcPositions(positions || []);
+      if (s?.applyNpcPositions) s.applyNpcPositions(positions);
     };
     socket.emit("world:npc-positions-request");
     socket.on("world:npc-positions-list", handler);
