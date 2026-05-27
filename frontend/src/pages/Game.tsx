@@ -194,6 +194,21 @@ export default function Game() {
   useEffect(() => { const s = getSocket(); if (!s) return; const h = (d: { message: string; duration: number }) => { setOverlayMessage(d.message); if (overlayTimer.current) clearTimeout(overlayTimer.current); overlayTimer.current = setTimeout(() => setOverlayMessage(null), d.duration || 6000); }; s.on("world:overlay", h); return () => { s.off("world:overlay", h); }; }, []);
   useEffect(() => { const s = getSocket(); if (!s || !selectedCharacter) return; const h = (d: { characterId: number; winnerName: string; position: { posX: number; posY: number } }) => { if (d.characterId === selectedCharacter.id) { setOverlayMessage(`Sei stato ucciso da ${d.winnerName}!`); const sc = (gameRef.current?.scene?.getScene("WorldScene") as any); if (sc?.playerSprite) { sc.playerSprite.x = d.position.posX; sc.playerSprite.y = d.position.posY; } loadQuests(); loadInventory(); api.getCharacter(selectedCharacter.id).then(c => useAuthStore.getState().setSelectedCharacter(c)); } }; s.on("character:died", h); return () => { s.off("character:died", h); }; }, [selectedCharacter, loadQuests, loadInventory]);
   useEffect(() => { loadQuests(); }, [loadQuests]);
+  useEffect(() => {
+    const socket = getSocket();
+    if (!socket) return;
+    const handler = (positions: any[]) => {
+      const s = gameRef.current?.scene?.getScene("WorldScene") as any;
+      if (s?.applyNpcPositions) s.applyNpcPositions(positions || []);
+    };
+    socket.emit("world:npc-positions-request");
+    socket.on("world:npc-positions-list", handler);
+    socket.on("world:npc-positions-updated", handler);
+    return () => {
+      socket.off("world:npc-positions-list", handler);
+      socket.off("world:npc-positions-updated", handler);
+    };
+  }, []);
   useEffect(() => { questTemplatesRef.current = questTemplates; }, [questTemplates]);
   useEffect(() => { activeQuestsRef.current = activeQuests; }, [activeQuests]);
   useEffect(() => { handleGatheringCompleteRef.current = handleGatheringComplete; }, [handleGatheringComplete]);
@@ -245,16 +260,6 @@ export default function Game() {
             socket.on("world:tiles-updated", (data: { tiles: any[] }) => {
               const s = game!.scene.getScene("WorldScene") as any;
               if (s?.drawCustomTiles) s.drawCustomTiles(data.tiles || []);
-            });
-
-            socket.emit("world:npc-positions-request");
-            socket.on("world:npc-positions-list", (positions: any[]) => {
-              const s = game!.scene.getScene("WorldScene") as any;
-              if (s?.applyNpcPositions) s.applyNpcPositions(positions || []);
-            });
-            socket.on("world:npc-positions-updated", (data: { positions: any[] }) => {
-              const s = game!.scene.getScene("WorldScene") as any;
-              if (s?.applyNpcPositions) s.applyNpcPositions(data.positions || []);
             });
 
             api.fetchCustomTiles().then(tiles => {
