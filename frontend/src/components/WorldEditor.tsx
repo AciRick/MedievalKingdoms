@@ -128,7 +128,8 @@ export default function WorldEditor({ tiles, onSave, onClose, npcPositions, onSa
   const [zoom, setZoom] = useState(1);
   const [versions, setVersions] = useState<{ time: string; desc: string; tiles: Tile[] }[]>([{ time: new Date().toLocaleTimeString(), desc: "Apertura", tiles: [...tiles] }]);
   const [editNpc, setEditNpc] = useState(npcPositions || []);
-  const [draggingNpc, setDraggingNpc] = useState<string | null>(null);
+  const [selectedNpc, setSelectedNpc] = useState<string | null>(null);
+  const [npcTool, setNpcTool] = useState(false);
   const zoneScrollRef = useRef<HTMLDivElement>(null);
 
   const addVersion = (desc: string, t: Tile[]) => setVersions(v => [...v, { time: new Date().toLocaleTimeString(), desc, tiles: [...t] }]);
@@ -144,6 +145,11 @@ export default function WorldEditor({ tiles, onSave, onClose, npcPositions, onSa
   };
 
   const handleTileClick = (globalCol: number, globalRow: number) => {
+    if (npcTool && selectedNpc) {
+      setEditNpc(prev => prev.map(n => n.label === selectedNpc ? { ...n, x: Math.round(globalCol * 32 + 16), y: Math.round(globalRow * 32 + 16) } : n));
+      setSelectedNpc(null); setNpcTool(false);
+      return;
+    }
     if (selectedTile === "__eraser") {
       setEditTiles(prev => prev.filter(t => !(t.col === globalCol && t.row === globalRow)));
     } else {
@@ -201,13 +207,16 @@ export default function WorldEditor({ tiles, onSave, onClose, npcPositions, onSa
         const lc = n.x / 32, lr = n.y / 32;
         if (lc < startCol || lc >= startCol + cols || lr < startRow || lr >= startRow + rows) return null;
         const color = n.hasShop ? "#ffcc00" : n.hasQuest ? "#44cc44" : "#4488ff";
+        const isSelected = selectedNpc === n.label;
         return (
           <div key={n.label}
-            onMouseDown={e => { e.preventDefault(); setDraggingNpc(n.label); }}
+            onClick={e => { e.stopPropagation(); if (npcTool) { setSelectedNpc(n.label === selectedNpc ? null : n.label); } else { setSelectedNpc(n.label); } }}
+            title={`${n.label} (${n.x},${n.y}) - ${npcTool ? "clicca tile per spostare" : "attiva ✋ per spostare"}`}
             style={{
               position: "absolute", left: (lc - startCol) * 32 * zoom - 8, top: (lr - startRow) * 32 * zoom - 8,
-              width: 16, height: 16, background: color, border: "2px solid #fff", borderRadius: "50%",
-              cursor: "grab", zIndex: 10, display: "flex", alignItems: "center", justifyContent: "center",
+              width: 16, height: 16, background: color, border: isSelected ? "3px solid #fff" : "2px solid #fff", borderRadius: "50%",
+              cursor: "pointer", zIndex: 10, display: "flex", alignItems: "center", justifyContent: "center",
+              boxShadow: isSelected ? "0 0 8px #ff0" : "none",
             }}>
             <span style={{ fontSize: 6, color: "#fff", pointerEvents: "none", marginTop: 16 }}>{n.label.substring(0,4)}</span>
           </div>
@@ -220,21 +229,6 @@ export default function WorldEditor({ tiles, onSave, onClose, npcPositions, onSa
   const handleWheel = (e: React.WheelEvent) => {
     if (e.ctrlKey) { e.preventDefault(); setZoom(z => Math.max(0.25, Math.min(4, z + (e.deltaY < 0 ? 0.25 : -0.25)))); }
   };
-
-  useEffect(() => {
-    if (!draggingNpc) return;
-    const onMove = (e: MouseEvent) => {
-      const container = zoneScrollRef.current || document.body;
-      const rect = container.getBoundingClientRect();
-      const x = e.clientX - rect.left + container.scrollLeft;
-      const y = e.clientY - rect.top + container.scrollTop;
-      setEditNpc(prev => prev.map(n => n.label === draggingNpc ? { ...n, x: Math.round(x), y: Math.round(y) } : n));
-    };
-    const onUp = () => setDraggingNpc(null);
-    window.addEventListener("mousemove", onMove);
-    window.addEventListener("mouseup", onUp);
-    return () => { window.removeEventListener("mousemove", onMove); window.removeEventListener("mouseup", onUp); };
-  }, [draggingNpc]);
 
   if (mode === "section") {
     const startCol = section.cx * CHUNK_W, startRow = section.cy * CHUNK_H;
@@ -256,10 +250,15 @@ export default function WorldEditor({ tiles, onSave, onClose, npcPositions, onSa
             <Sidebar versions={versions} editTiles={editTiles} setEditTiles={setEditTiles} onClose={onClose} />
           </div>
           <div className="editor-palette-bar">
-            <div onClick={() => setSelectedTile("__eraser")}
-              style={{ border: selectedTile === "__eraser" ? "2px solid #ff3333" : "1px solid #333", width: 40, height: 40, display: "flex", alignItems: "center", justifyContent: "center", background: "#331111", cursor: "pointer", flexShrink: 0 }}>
-              <span style={{ fontSize: 16 }}>🧹</span>
-            </div>
+              <div onClick={() => setSelectedTile("__eraser")}
+                style={{ border: selectedTile === "__eraser" ? "2px solid #ff3333" : "1px solid #333", width: 40, height: 40, display: "flex", alignItems: "center", justifyContent: "center", background: "#331111", cursor: "pointer", flexShrink: 0 }}>
+                <span style={{ fontSize: 16 }}>🧹</span>
+              </div>
+              <div onClick={() => { setNpcTool(!npcTool); setSelectedNpc(null); }}
+                style={{ border: npcTool ? "2px solid #44aaff" : "1px solid #333", width: 40, height: 40, display: "flex", alignItems: "center", justifyContent: "center", background: npcTool ? "#1a2a3e" : "#1a1a2e", cursor: "pointer", flexShrink: 0 }}
+                title="🖐 Muovi NPC: clicca NPC poi clicca destinazione">
+                <span style={{ fontSize: 16 }}>✋</span>
+              </div>
             {ALL_TILES.map(t => (
               <div key={t.key} onClick={() => setSelectedTile(t.key)}
                 style={{ border: selectedTile === t.key ? "2px solid #c9a44b" : "1px solid #333", width: 40, height: 40, display: "flex", alignItems: "center", justifyContent: "center", background: "#1a1a2e", cursor: "pointer", flexShrink: 0 }}>
@@ -295,10 +294,15 @@ export default function WorldEditor({ tiles, onSave, onClose, npcPositions, onSa
             <Sidebar versions={versions} editTiles={editTiles} setEditTiles={setEditTiles} onClose={onClose} />
           </div>
           <div className="editor-palette-bar">
-            <div onClick={() => setSelectedTile("__eraser")}
-              style={{ border: selectedTile === "__eraser" ? "2px solid #ff3333" : "1px solid #333", width: 40, height: 40, display: "flex", alignItems: "center", justifyContent: "center", background: "#331111", cursor: "pointer", flexShrink: 0 }}>
-              <span style={{ fontSize: 16 }}>🧹</span>
-            </div>
+              <div onClick={() => setSelectedTile("__eraser")}
+                style={{ border: selectedTile === "__eraser" ? "2px solid #ff3333" : "1px solid #333", width: 40, height: 40, display: "flex", alignItems: "center", justifyContent: "center", background: "#331111", cursor: "pointer", flexShrink: 0 }}>
+                <span style={{ fontSize: 16 }}>🧹</span>
+              </div>
+              <div onClick={() => { setNpcTool(!npcTool); setSelectedNpc(null); }}
+                style={{ border: npcTool ? "2px solid #44aaff" : "1px solid #333", width: 40, height: 40, display: "flex", alignItems: "center", justifyContent: "center", background: npcTool ? "#1a2a3e" : "#1a1a2e", cursor: "pointer", flexShrink: 0 }}
+                title="🖐 Muovi NPC: clicca NPC poi clicca destinazione">
+                <span style={{ fontSize: 16 }}>✋</span>
+              </div>
             {ALL_TILES.map(t => (
               <div key={t.key} onClick={() => setSelectedTile(t.key)}
                 style={{ border: selectedTile === t.key ? "2px solid #c9a44b" : "1px solid #333", width: 40, height: 40, display: "flex", alignItems: "center", justifyContent: "center", background: "#1a1a2e", cursor: "pointer", flexShrink: 0 }}>
