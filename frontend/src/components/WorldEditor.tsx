@@ -117,6 +117,22 @@ const ALL_TILES: { key: string; src: string; label: string }[] = (() => {
   return t;
 })();
 
+interface BuildingPrefab { name: string; icon: string; w: number; h: number; tileKey: string; type: string; }
+
+const BUILDING_PREFABS: BuildingPrefab[] = [
+  { name: "Taverna", icon: "🍺", w: 2, h: 1, tileKey: "town_0048", type: "building" },
+  { name: "Fucina", icon: "⚒️", w: 2, h: 1, tileKey: "town_0048", type: "building" },
+  { name: "Bottega", icon: "🏪", w: 2, h: 1, tileKey: "town_0048", type: "building" },
+  { name: "Capanna", icon: "🏚️", w: 2, h: 2, tileKey: "town_0048", type: "building" },
+  { name: "Casa", icon: "🏠", w: 2, h: 2, tileKey: "town_0048", type: "building" },
+  { name: "Caserma", icon: "🛡️", w: 2, h: 2, tileKey: "dung_0040", type: "rest" },
+  { name: "Tempio", icon: "⛪", w: 2, h: 2, tileKey: "dung_0019", type: "rest" },
+  { name: "Castello", icon: "🏰", w: 3, h: 3, tileKey: "town_0052", type: "building" },
+  { name: "Fattoria", icon: "🌾", w: 2, h: 2, tileKey: "town_0048", type: "building" },
+  { name: "Miniera", icon: "⛏", w: 2, h: 2, tileKey: "dung_0040", type: "building" },
+  { name: "Porto", icon: "🚢", w: 3, h: 2, tileKey: "dung_0040", type: "building" },
+];
+
 interface Props { tiles: Tile[]; onSave: (tiles: Tile[]) => void; onClose: () => void; npcPositions?: { label: string; x: number; y: number; hasQuest?: boolean; hasShop?: boolean }[]; onSaveNpc?: (positions: { label: string; x: number; y: number }[]) => void; }
 
 export default function WorldEditor({ tiles, onSave, onClose, npcPositions, onSaveNpc }: Props) {
@@ -130,6 +146,8 @@ export default function WorldEditor({ tiles, onSave, onClose, npcPositions, onSa
   const [editNpc, setEditNpc] = useState(npcPositions || []);
   const [selectedNpc, setSelectedNpc] = useState<string | null>(null);
   const [npcTool, setNpcTool] = useState(false);
+  const [buildingTool, setBuildingTool] = useState(false);
+  const [selectedBuilding, setSelectedBuilding] = useState<BuildingPrefab | null>(null);
   const zoneScrollRef = useRef<HTMLDivElement>(null);
 
   const addVersion = (desc: string, t: Tile[]) => setVersions(v => [...v, { time: new Date().toLocaleTimeString(), desc, tiles: [...t] }]);
@@ -146,12 +164,22 @@ export default function WorldEditor({ tiles, onSave, onClose, npcPositions, onSa
 
   const handleTileClick = (globalCol: number, globalRow: number) => {
     console.log("handleTileClick: npcTool=", npcTool, "selectedNpc=", selectedNpc, "selectedTile=", selectedTile);
+    if (buildingTool && selectedBuilding) {
+      const b = selectedBuilding;
+      const newTiles = editTiles.filter(t => !(t.col >= globalCol && t.col < globalCol + b.w && t.row >= globalRow && t.row < globalRow + b.h));
+      for (let r = 0; r < b.h; r++)
+        for (let c = 0; c < b.w; c++)
+          newTiles.push({ col: globalCol + c, row: globalRow + r, key: b.tileKey });
+      setEditTiles(newTiles);
+      return;
+    }
     if (npcTool && selectedNpc) {
       setEditNpc(prev => prev.map(n => n.label === selectedNpc ? { ...n, x: Math.round(globalCol * 32 + 16), y: Math.round(globalRow * 32 + 16) } : n));
       setSelectedNpc(null);
       return;
     }
     if (npcTool) return;
+    if (buildingTool) return;
     if (selectedTile === "__eraser") {
       setEditTiles(prev => prev.filter(t => !(t.col === globalCol && t.row === globalRow)));
     } else {
@@ -256,10 +284,15 @@ export default function WorldEditor({ tiles, onSave, onClose, npcPositions, onSa
                 style={{ border: selectedTile === "__eraser" ? "2px solid #ff3333" : "1px solid #333", width: 40, height: 40, display: "flex", alignItems: "center", justifyContent: "center", background: "#331111", cursor: "pointer", flexShrink: 0 }}>
                 <span style={{ fontSize: 16 }}>🧹</span>
               </div>
-              <div onClick={() => { setNpcTool(!npcTool); setSelectedNpc(null); }}
+              <div onClick={() => { setNpcTool(!npcTool); setSelectedNpc(null); setBuildingTool(false); }}
                 style={{ border: npcTool ? "2px solid #44aaff" : "1px solid #333", width: 40, height: 40, display: "flex", alignItems: "center", justifyContent: "center", background: npcTool ? "#1a2a3e" : "#1a1a2e", cursor: "pointer", flexShrink: 0 }}
-                title="🖐 Muovi NPC: clicca NPC poi clicca destinazione">
+                title="✋ Muovi NPC">
                 <span style={{ fontSize: 16 }}>✋</span>
+              </div>
+              <div onClick={() => { setBuildingTool(!buildingTool); setSelectedBuilding(null); setNpcTool(false); }}
+                style={{ border: buildingTool ? "2px solid #eebb44" : "1px solid #333", width: 40, height: 40, display: "flex", alignItems: "center", justifyContent: "center", background: buildingTool ? "#3e2a1e" : "#1a1a2e", cursor: "pointer", flexShrink: 0 }}
+                title="🏠 Piazza Edificio">
+                <span style={{ fontSize: 16 }}>🏠</span>
               </div>
             {ALL_TILES.map(t => (
               <div key={t.key} onClick={() => setSelectedTile(t.key)}
@@ -300,10 +333,15 @@ export default function WorldEditor({ tiles, onSave, onClose, npcPositions, onSa
                 style={{ border: selectedTile === "__eraser" ? "2px solid #ff3333" : "1px solid #333", width: 40, height: 40, display: "flex", alignItems: "center", justifyContent: "center", background: "#331111", cursor: "pointer", flexShrink: 0 }}>
                 <span style={{ fontSize: 16 }}>🧹</span>
               </div>
-              <div onClick={() => { setNpcTool(!npcTool); setSelectedNpc(null); }}
+              <div onClick={() => { setNpcTool(!npcTool); setSelectedNpc(null); setBuildingTool(false); }}
                 style={{ border: npcTool ? "2px solid #44aaff" : "1px solid #333", width: 40, height: 40, display: "flex", alignItems: "center", justifyContent: "center", background: npcTool ? "#1a2a3e" : "#1a1a2e", cursor: "pointer", flexShrink: 0 }}
-                title="🖐 Muovi NPC: clicca NPC poi clicca destinazione">
+                title="✋ Muovi NPC">
                 <span style={{ fontSize: 16 }}>✋</span>
+              </div>
+              <div onClick={() => { setBuildingTool(!buildingTool); setSelectedBuilding(null); setNpcTool(false); }}
+                style={{ border: buildingTool ? "2px solid #eebb44" : "1px solid #333", width: 40, height: 40, display: "flex", alignItems: "center", justifyContent: "center", background: buildingTool ? "#3e2a1e" : "#1a1a2e", cursor: "pointer", flexShrink: 0 }}
+                title="🏠 Piazza Edificio">
+                <span style={{ fontSize: 16 }}>🏠</span>
               </div>
             {ALL_TILES.map(t => (
               <div key={t.key} onClick={() => setSelectedTile(t.key)}

@@ -579,6 +579,8 @@ export class WorldScene extends Phaser.Scene {
             e.sprite.setTint(0xff4444);
             this.time.delayedCall(200, () => e.sprite.clearTint());
             this.drawEnemyHpBar(e);
+            this.showDamageNumber(e.sprite.x, e.sprite.y - 20, pDmg, 0xff0000);
+            this.showDamageNumber(this.playerSprite.x, this.playerSprite.y - 20, eDmg, 0xffff00);
             if (newEHp <= 0) {
               this.killEnemy(e);
               this.lootEnemy(e);
@@ -607,6 +609,14 @@ export class WorldScene extends Phaser.Scene {
       }
       e.label.x = e.sprite.x; e.label.y = e.sprite.y - 22;
     }
+  }
+
+  private showDamageNumber(x: number, y: number, dmg: number, color: number): void {
+    const txt = this.add.text(x, y, `-${dmg}`, {
+      fontFamily: '"Press Start 2P"', fontSize: "7px", color: `#${color.toString(16).padStart(6, "0")}`,
+      stroke: "#000000", strokeThickness: 2,
+    }).setOrigin(0.5).setDepth(50);
+    this.tweens.add({ targets: txt, y: y - 20, alpha: 0, duration: 600, onComplete: () => txt.destroy() });
   }
 
   private drawEnemyHpBar(e: EnemySprite): void {
@@ -663,23 +673,37 @@ export class WorldScene extends Phaser.Scene {
 
   private async playerDeath(): Promise<void> {
     if (!this.playerCharacter) return;
+    this.movementDisabled = false;
+    this.combatActive = false;
+    this.enemyCombatTimer.clear();
+    this.enemyHp.clear();
+    for (const [id, bar] of this.enemyHpBars) bar.destroy();
+    this.enemyHpBars.clear();
+
     try {
       const token = localStorage.getItem("auth_token");
-      await fetch("/api/combat/pve", {
+      const e = this.enemySprites.find(es => es.chasing);
+      const eid = e ? e.def.id : "bandit_1";
+      const res = await fetch("/api/combat/pve", {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ characterId: this.playerCharacter.id, enemyId: "bandit_1", timingScore: 0 }),
+        body: JSON.stringify({ characterId: this.playerCharacter.id, enemyId: eid, timingScore: 0 }),
       });
+      const data = await res.json();
+      this.playerCharacter.hp = data.playerDied ? 100 : this.playerCharacter.hp;
     } catch {}
-    this.playerCharacter.hp = 100;
-    this.playerCharacter.energy = 100;
+
     const spawnX = this.playerCharacter.kingdom === "VILLAGE_A" ? 175 : 2700;
     const spawnY = 360;
     this.playerSprite.x = spawnX;
     this.playerSprite.y = spawnY;
     this.playerNameLabel.x = spawnX;
     this.playerNameLabel.y = spawnY - 18;
-    window.dispatchEvent(new CustomEvent("phaser:overlay-message", { detail: { message: "Sei stato ucciso! Hai perso il 60% dei materiali.", duration: 4000 } }));
+    this.playerSprite.setTexture("player_char");
+    this.playerSprite.setDisplaySize(28, 28);
+    window.dispatchEvent(new CustomEvent("phaser:overlay-message", {
+      detail: { message: "Sei stato ucciso! Hai perso il 60% dei materiali.", duration: 4000 },
+    }));
   }
 
   private drawResourceMarkers(): void {
@@ -763,8 +787,8 @@ export class WorldScene extends Phaser.Scene {
   }
 
   isWallTile(col: number, row: number): boolean {
-    if (col === 28 && row >= 7 && row <= 27) return row !== 34 && row !== 35;
-    if (col === 80 && row >= 7 && row <= 27) return row !== 34 && row !== 35;
+    if (col === 28 && row >= 7 && row <= 27) return row !== 17 && row !== 18;
+    if (col === 80 && row >= 7 && row <= 27) return row !== 17 && row !== 18;
     if (row === 7 && col >= 0 && col <= 27) return true;
     if (row === 27 && col >= 0 && col <= 27) return true;
     if (row === 7 && col >= 80 && col <= 107) return true;

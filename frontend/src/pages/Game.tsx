@@ -49,11 +49,9 @@ export default function Game() {
   const [shopDialog, setShopDialog] = useState<ShopDialog | null>(null);
   const [restDialog, setRestDialog] = useState<RestDialog | null>(null);
   const [inventory, setInventory] = useState<Record<string, number>>({});
-  const [combat, setCombat] = useState<{ enemyId: string; enemyName: string; enemyX: number; enemyY: number } | null>(null);
   const questTemplatesRef = useRef<QuestTpl[]>([]);
   const activeQuestsRef = useRef<ActiveQuest[]>([]);
   const handleGatheringCompleteRef = useRef<(resourceName: string, amount: number) => Promise<void>>(async () => {});
-  const combatRef = useRef<{ enemyId: string; enemyName: string; enemyX: number; enemyY: number } | null>(null);
 
   const closeAll = useCallback(() => { setNpcDialog(null); setShopDialog(null); setRestDialog(null); setQuestOffer(null); }, []);
 
@@ -132,46 +130,12 @@ export default function Game() {
     } catch (err: unknown) { setOverlayMessage((err as any)?.error || "Errore"); if (overlayTimer.current) clearTimeout(overlayTimer.current); overlayTimer.current = setTimeout(() => setOverlayMessage(null), 3000); }
   }, [selectedCharacter, restDialog]);
 
-  const handleCombatComplete = useCallback(async (timingScore: number) => {
-    const c = combatRef.current;
-    if (!c || !selectedCharacter) { setCombat(null); return; }
-    try {
-      const r = await api.pveCombat(selectedCharacter.id, c.enemyId, timingScore);
-      setOverlayMessage(`${r.message} (Precisione: ${timingScore}%)`); if (overlayTimer.current) clearTimeout(overlayTimer.current);
-      overlayTimer.current = setTimeout(() => setOverlayMessage(null), 3500);
-
-      const ll = (r as any).loot;
-      if (ll?.name) {
-        setTimeout(() => {
-          setOverlayMessage(`Hai ottenuto: ${ll.name}!`);
-          if (overlayTimer.current) clearTimeout(overlayTimer.current);
-          overlayTimer.current = setTimeout(() => setOverlayMessage(null), 3000);
-        }, 2000);
-      }
-
-      const scene = (gameRef.current?.scene?.getScene("WorldScene") as any);
-      if (scene) scene.playCombatAnimation(c.enemyX, c.enemyY, r.playerWon);
-
-      if (r.playerWon && scene) scene.defeatEnemySprite(c.enemyId);
-      if (scene) scene.endCombat();
-      if (r.playerDied && scene?.playerSprite) {
-        scene.playerSprite.x = selectedCharacter.kingdom === "VILLAGE_A" ? 150 : 700;
-        scene.playerSprite.y = 280;
-      }
-
-      const updated = await api.getCharacter(selectedCharacter.id);
-      useAuthStore.getState().setSelectedCharacter(updated);
-    } catch {}
-    setCombat(null);
-  }, [selectedCharacter]);
-
   const handleCollectItem = useCallback(async (itemId: number) => {
     const socket = getSocket(); if (!socket) return;
     socket.emit("item:collect", { itemId });
   }, []);
 
-  useEffect(() => { combatRef.current = combat; }, [combat]);
-  useEffect(() => { if (npcDialog || questOffer || shopDialog || restDialog || combat) { window.dispatchEvent(new CustomEvent("phaser:disable-movement")); } else if (!gathering) { window.dispatchEvent(new CustomEvent("phaser:enable-movement")); } }, [npcDialog, questOffer, shopDialog, restDialog, combat, gathering]);
+  useEffect(() => { if (npcDialog || questOffer || shopDialog || restDialog) { window.dispatchEvent(new CustomEvent("phaser:disable-movement")); } else if (!gathering) { window.dispatchEvent(new CustomEvent("phaser:enable-movement")); } }, [npcDialog, questOffer, shopDialog, restDialog, gathering]);
 
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
@@ -179,7 +143,6 @@ export default function Game() {
         setShowInventory(p => !p); closeAll(); return;
       }
       if (e.key === "Escape") {
-        if (combat) { setCombat(null); return; }
         if (shopDialog) { closeShopDialog(); return; }
         if (restDialog) { closeRestDialog(); return; }
         if (npcDialog) { closeNpcDialog(); return; }
@@ -188,7 +151,7 @@ export default function Game() {
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [npcDialog, questOffer, shopDialog, restDialog, combat, closeAll]);
+  }, [npcDialog, questOffer, shopDialog, restDialog, closeAll]);
 
   useEffect(() => { const s = getSocket(); if (!s) return; const h = (d: { message: string; duration: number }) => { setOverlayMessage(d.message); if (overlayTimer.current) clearTimeout(overlayTimer.current); overlayTimer.current = setTimeout(() => setOverlayMessage(null), d.duration || 6000); }; s.on("world:overlay", h); return () => { s.off("world:overlay", h); }; }, []);
 
@@ -307,16 +270,6 @@ export default function Game() {
 
     const onInteractRest = (e: Event) => { setRestDialog((e as CustomEvent).detail as RestDialog); };
 
-    const onPveAttack = (e: Event) => {
-      const d = (e as CustomEvent).detail as { enemyId: string; enemyName: string; enemyX: number; enemyY: number };
-      setCombat(d);
-    };
-
-    const onCaveAttack = (e: Event) => {
-      const d = (e as CustomEvent).detail as { enemyId: string; enemyName: string; enemyX: number; enemyY: number };
-      setCombat(d);
-    };
-
     const onCaveExit = async () => {
       if (!selectedCharacter) return;
       try {
@@ -349,11 +302,9 @@ export default function Game() {
     window.addEventListener("phaser:interact-npc", onInteractNpc);
     window.addEventListener("phaser:interact-building", onInteractBuilding);
     window.addEventListener("phaser:interact-rest", onInteractRest);
-    window.addEventListener("phaser:pve-attack", onPveAttack);
     window.addEventListener("phaser:gathering-start", onGatheringStart);
     window.addEventListener("phaser:gathering-complete", onGatheringComplete);
     window.addEventListener("phaser:collect-item", onCollectItem);
-    window.addEventListener("phaser:cave-attack", onCaveAttack);
     window.addEventListener("phaser:cave-exit", onCaveExit);
     window.addEventListener("phaser:interact-cave", onInteractCave);
 
@@ -362,16 +313,14 @@ export default function Game() {
       window.removeEventListener("phaser:interact-npc", onInteractNpc);
       window.removeEventListener("phaser:interact-building", onInteractBuilding);
       window.removeEventListener("phaser:interact-rest", onInteractRest);
-      window.removeEventListener("phaser:pve-attack", onPveAttack);
       window.removeEventListener("phaser:gathering-start", onGatheringStart);
       window.removeEventListener("phaser:gathering-complete", onGatheringComplete);
       window.removeEventListener("phaser:collect-item", onCollectItem);
-      window.removeEventListener("phaser:cave-attack", onCaveAttack);
       window.removeEventListener("phaser:cave-exit", onCaveExit);
       window.removeEventListener("phaser:interact-cave", onInteractCave);
       if (game) { game.destroy(true); gameRef.current = null; }
     };
-  }, [user, selectedCharacter, navigate, loadInventory, handleCombatComplete, handleCollectItem, closeAll]);
+  }, [user, selectedCharacter, navigate, loadInventory, handleCollectItem, closeAll]);
 
   return (
     <div style={{ width: "100vw", height: "100vh", position: "relative" }}>
