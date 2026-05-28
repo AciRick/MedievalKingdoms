@@ -92,11 +92,19 @@ router.get("/treaties", async (_req: Request, res: Response): Promise<void> => {
 router.get("/custom-tiles", async (_req: Request, res: Response): Promise<void> => {
   try {
     const row = await prisma.worldSetting.findUnique({ where: { key: "customTiles" } });
-    const tiles = row ? JSON.parse(row.value) : [];
-    console.log(`GET /api/world/custom-tiles → ${tiles.length} tiles`);
-    res.json(tiles);
+    res.json(row ? JSON.parse(row.value) : []);
   } catch (err) {
     console.error("Custom tiles error:", err);
+    res.status(500).json({ error: "Errore interno" });
+  }
+});
+
+// GET /api/world/npc-positions — pubblico
+router.get("/npc-positions", async (_req: Request, res: Response): Promise<void> => {
+  try {
+    const row = await prisma.worldSetting.findUnique({ where: { key: "npcPositions" } });
+    res.json(row ? JSON.parse(row.value) : []);
+  } catch (err) {
     res.status(500).json({ error: "Errore interno" });
   }
 });

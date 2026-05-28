@@ -8,7 +8,6 @@ import InventoryPanel from "../components/InventoryPanel";
 import Chat from "../components/Chat";
 import QuestOffer from "../components/QuestOffer";
 import GatheringBar from "../components/GatheringBar";
-import CombatBar from "../components/CombatBar";
 import ActiveQuestHud from "../components/ActiveQuestHud";
 import { connectSocket, getSocket } from "../game/socket";
 import { getToken, api } from "../api/client";
@@ -192,6 +191,17 @@ export default function Game() {
   }, [npcDialog, questOffer, shopDialog, restDialog, combat, closeAll]);
 
   useEffect(() => { const s = getSocket(); if (!s) return; const h = (d: { message: string; duration: number }) => { setOverlayMessage(d.message); if (overlayTimer.current) clearTimeout(overlayTimer.current); overlayTimer.current = setTimeout(() => setOverlayMessage(null), d.duration || 6000); }; s.on("world:overlay", h); return () => { s.off("world:overlay", h); }; }, []);
+
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const d = (e as CustomEvent).detail as { message: string };
+      setOverlayMessage(d.message);
+      if (overlayTimer.current) clearTimeout(overlayTimer.current);
+      overlayTimer.current = setTimeout(() => setOverlayMessage(null), 4000);
+    };
+    window.addEventListener("phaser:overlay-message", handler);
+    return () => window.removeEventListener("phaser:overlay-message", handler);
+  }, []);
   useEffect(() => { const s = getSocket(); if (!s || !selectedCharacter) return; const h = (d: { characterId: number; winnerName: string; position: { posX: number; posY: number } }) => { if (d.characterId === selectedCharacter.id) { setOverlayMessage(`Sei stato ucciso da ${d.winnerName}!`); const sc = (gameRef.current?.scene?.getScene("WorldScene") as any); if (sc?.playerSprite) { sc.playerSprite.x = d.position.posX; sc.playerSprite.y = d.position.posY; } loadQuests(); loadInventory(); api.getCharacter(selectedCharacter.id).then(c => useAuthStore.getState().setSelectedCharacter(c)); } }; s.on("character:died", h); return () => { s.off("character:died", h); }; }, [selectedCharacter, loadQuests, loadInventory]);
   useEffect(() => { loadQuests(); }, [loadQuests]);
   useEffect(() => {
@@ -424,7 +434,6 @@ export default function Game() {
       {overlayMessage && (<div className="admin-overlay"><div className="overlay-text">{overlayMessage}</div></div>)}
       {questOffer && (<QuestOffer quest={questOffer} onAccept={handleAcceptQuest} onRefuse={() => setQuestOffer(null)} />)}
       {gathering && (<GatheringBar resourceLabel={gathering.resourceLabel} gatherTime={gathering.gatherTime} onComplete={() => {}} onCancel={() => setGathering(null)} />)}
-      {combat && (<CombatBar enemyName={combat.enemyName} onComplete={handleCombatComplete} onCancel={() => setCombat(null)} />)}
 
       {shopDialog && (
         <div className="modal-overlay" onClick={closeShopDialog}><div className="npc-dialog-panel" onClick={(e) => e.stopPropagation()}>

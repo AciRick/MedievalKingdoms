@@ -30,40 +30,25 @@ const ZONE_LABELS: Record<string, string> = {
 };
 
 interface NpcDef { x: number; y: number; color: number; label: string; dialog: string; questBuildingName?: string; shop?: { buys: string; buyLabel: string; sellPrice: number }; }
-interface EnemyDef { id: string; x: number; y: number; label: string; kingdom: string; strength: number; agility: number; wanderRange: number; }
-
-const NPC_DATA: NpcDef[] = [
-  { x: 400, y: 600, color: 0x22cc22, label: "Mercante", dialog: "\"Benvenuto! Ho merci rare.\"", questBuildingName: "Capanna Foresta" },
-  { x: 200, y: 700, color: 0x8888ff, label: "Guardia", dialog: "\"Fermo! Ah, sei tu. Attento nella Terra di Nessuno.\"", questBuildingName: "Castello Nord" },
-  { x: 180, y: 550, color: 0xcc8844, label: "Fabbro", dialog: "\"Le mie lame sono le migliori!\"", questBuildingName: "Castello Nord" },
-  { x: 500, y: 650, color: 0x44cc44, label: "Oste", dialog: "\"Birra fresca! Vuoi vendermi legna?\"", shop: { buys: "wood", buyLabel: "Legna", sellPrice: 2 } },
-  { x: 350, y: 580, color: 0xcc44cc, label: "Giullare", dialog: "\"Ahah! Il re è così grasso...\"" },
-  { x: 300, y: 720, color: 0x44dd44, label: "Contadina", dialog: "\"Il raccolto è stato buono quest'anno.\"", questBuildingName: "Fattoria Nord" },
-  { x: 2100, y: 280, color: 0xaaaaaa, label: "Monaco", dialog: "\"La pace sia con te, viandante. L'Abbazia ha bisogno di erbe medicinali.\"", questBuildingName: "Abbazia" },
-  { x: 5200, y: 700, color: 0x44aadd, label: "Commerciante", dialog: "\"Merci del sud!\"", questBuildingName: "Tempio" },
-  { x: 5150, y: 620, color: 0xaaaaff, label: "Sacerdotessa", dialog: "\"Che la luce ti guidi.\"" },
-  { x: 5400, y: 750, color: 0x8888ff, label: "Capitano", dialog: "\"Proteggo queste mura.\"", questBuildingName: "Miniera" },
-  { x: 5800, y: 900, color: 0x44aadd, label: "Pescatore", dialog: "\"Pesce fresco!\"", questBuildingName: "Porto Comm.le", shop: { buys: "fish", buyLabel: "Pesce", sellPrice: 2 } },
-  { x: 5250, y: 850, color: 0x88cc88, label: "Contadino Sud", dialog: "\"I campi del sud sono fertili.\"", questBuildingName: "Fattoria Sud" },
-];
+interface EnemyDef { id: string; x: number; y: number; label: string; kingdom: string; strength: number; agility: number; wanderRange: number; hp: number; }
+interface EnemySprite { sprite: Phaser.GameObjects.Sprite; label: Phaser.GameObjects.Text; def: EnemyDef; originX: number; originY: number; wanderTarget: { x: number; y: number }; wanderTimer: number; chasing: boolean; }
 
 const ENEMY_DATA: EnemyDef[] = [
-  { id: "bandit_1", x: 2000, y: 700, label: "Bandito", kingdom: "HOSTILE", strength: 4, agility: 3, wanderRange: 200 },
-  { id: "bandit_2", x: 2600, y: 900, label: "Bandito", kingdom: "HOSTILE", strength: 3, agility: 4, wanderRange: 180 },
-  { id: "bandit_3", x: 3200, y: 650, label: "Bandito", kingdom: "HOSTILE", strength: 5, agility: 2, wanderRange: 220 },
-  { id: "bandit_4", x: 2200, y: 1100, label: "Bandito", kingdom: "HOSTILE", strength: 4, agility: 3, wanderRange: 190 },
-  { id: "raider_north", x: 1800, y: 500, label: "Predone Nord", kingdom: "VILLAGE_A", strength: 6, agility: 3, wanderRange: 250 },
-  { id: "raider_south_1", x: 4000, y: 800, label: "Predone Sud", kingdom: "VILLAGE_B", strength: 5, agility: 4, wanderRange: 240 },
-  { id: "raider_south_2", x: 4500, y: 600, label: "Predone Sud", kingdom: "VILLAGE_B", strength: 4, agility: 5, wanderRange: 260 },
-  { id: "skeleton_1", x: 2400, y: 1200, label: "Scheletro", kingdom: "HOSTILE", strength: 7, agility: 2, wanderRange: 150 },
-  { id: "wolf_1", x: 1200, y: 2000, label: "Lupo", kingdom: "HOSTILE", strength: 5, agility: 6, wanderRange: 300 },
-  { id: "wolf_2", x: 1800, y: 2200, label: "Lupo", kingdom: "HOSTILE", strength: 5, agility: 5, wanderRange: 280 },
-  { id: "bear_1", x: 2800, y: 2700, label: "Orso", kingdom: "HOSTILE", strength: 8, agility: 3, wanderRange: 200 },
-  { id: "bear_2", x: 3500, y: 2900, label: "Orso", kingdom: "HOSTILE", strength: 9, agility: 2, wanderRange: 180 },
+  { id: "bandit_1", x: 2000, y: 700, label: "Bandito", kingdom: "HOSTILE", strength: 4, agility: 3, wanderRange: 200, hp: 40 },
+  { id: "bandit_2", x: 2600, y: 900, label: "Bandito", kingdom: "HOSTILE", strength: 3, agility: 4, wanderRange: 180, hp: 35 },
+  { id: "bandit_3", x: 3200, y: 650, label: "Bandito", kingdom: "HOSTILE", strength: 5, agility: 2, wanderRange: 220, hp: 30 },
+  { id: "bandit_4", x: 2200, y: 1100, label: "Bandito", kingdom: "HOSTILE", strength: 4, agility: 3, wanderRange: 190, hp: 38 },
+  { id: "raider_north", x: 1800, y: 500, label: "Predone Nord", kingdom: "VILLAGE_A", strength: 6, agility: 3, wanderRange: 250, hp: 50 },
+  { id: "raider_south_1", x: 4000, y: 800, label: "Predone Sud", kingdom: "VILLAGE_B", strength: 5, agility: 4, wanderRange: 240, hp: 50 },
+  { id: "raider_south_2", x: 4500, y: 600, label: "Predone Sud", kingdom: "VILLAGE_B", strength: 4, agility: 5, wanderRange: 260, hp: 48 },
+  { id: "skeleton_1", x: 2400, y: 1200, label: "Scheletro", kingdom: "HOSTILE", strength: 7, agility: 2, wanderRange: 150, hp: 60 },
+  { id: "wolf_1", x: 1200, y: 2000, label: "Lupo", kingdom: "HOSTILE", strength: 5, agility: 6, wanderRange: 300, hp: 35 },
+  { id: "wolf_2", x: 1800, y: 2200, label: "Lupo", kingdom: "HOSTILE", strength: 5, agility: 5, wanderRange: 280, hp: 35 },
+  { id: "bear_1", x: 2800, y: 2700, label: "Orso", kingdom: "HOSTILE", strength: 8, agility: 3, wanderRange: 200, hp: 80 },
+  { id: "bear_2", x: 3500, y: 2900, label: "Orso", kingdom: "HOSTILE", strength: 9, agility: 2, wanderRange: 180, hp: 90 },
 ];
 
-const INTERACT_DISTANCE = 60, INTERACT_COOLDOWN = 500, GATHER_DISTANCE = 50, ITEM_DISTANCE = 40;
-const ENEMY_CHASE_DISTANCE = 150, ENEMY_ATTACK_DISTANCE = 25, ENEMY_INTERACT_DISTANCE = 55, ENEMY_SPEED = 80;
+const COMBAT_RANGE = 40, COMBAT_ESCAPE = 60, COMBAT_INTERVAL = 1500, RESPAWN_TIME = 60000;
 
 interface EnemySprite { sprite: Phaser.GameObjects.Sprite; label: Phaser.GameObjects.Text; def: EnemyDef; originX: number; originY: number; wanderTarget: { x: number; y: number }; wanderTimer: number; chasing: boolean; }
 interface BuildingDef { x: number; y: number; w: number; h: number; label: string; rest?: boolean; free?: boolean; }
@@ -81,6 +66,36 @@ const BUILDING_DATA: BuildingDef[] = [
   { x: 3400, y: 2700, w: 2, h: 2, label: "Rovine" }, { x: 4500, y: 2800, w: 2, h: 1, label: "Miniera Montagna" },
   { x: 5632, y: 3328, w: 2, h: 2, label: "CaveEntrance" },
 ];
+
+const NPC_DATA: NpcDef[] = [
+  { x: 400, y: 600, color: 0x22cc22, label: "Mercante", dialog: "\"Benvenuto! Ho merci rare.\"", questBuildingName: "Capanna Foresta" },
+  { x: 200, y: 700, color: 0x8888ff, label: "Guardia", dialog: "\"Fermo! Ah, sei tu. Attento nella Terra di Nessuno.\"", questBuildingName: "Castello Nord" },
+  { x: 180, y: 550, color: 0xcc8844, label: "Fabbro", dialog: "\"Le mie lame sono le migliori!\"", questBuildingName: "Castello Nord" },
+  { x: 500, y: 650, color: 0x44cc44, label: "Oste", dialog: "\"Birra fresca! Vuoi vendermi legna?\"", shop: { buys: "wood", buyLabel: "Legna", sellPrice: 2 } },
+  { x: 350, y: 580, color: 0xcc44cc, label: "Giullare", dialog: "\"Ahah! Il re è così grasso...\"" },
+  { x: 300, y: 720, color: 0x44dd44, label: "Contadina", dialog: "\"Il raccolto è stato buono quest'anno.\"", questBuildingName: "Fattoria Nord" },
+  { x: 2100, y: 280, color: 0xaaaaaa, label: "Monaco", dialog: "\"La pace sia con te, viandante. L'Abbazia ha bisogno di erbe medicinali.\"", questBuildingName: "Abbazia" },
+  { x: 5200, y: 700, color: 0x44aadd, label: "Commerciante", dialog: "\"Merci del sud!\"", questBuildingName: "Tempio" },
+  { x: 5150, y: 620, color: 0xaaaaff, label: "Sacerdotessa", dialog: "\"Che la luce ti guidi.\"" },
+  { x: 5400, y: 750, color: 0x8888ff, label: "Capitano", dialog: "\"Proteggo queste mura.\"", questBuildingName: "Miniera" },
+  { x: 5800, y: 900, color: 0x44aadd, label: "Pescatore", dialog: "\"Pesce fresco!\"", questBuildingName: "Porto Comm.le", shop: { buys: "fish", buyLabel: "Pesce", sellPrice: 2 } },
+  { x: 5250, y: 850, color: 0x88cc88, label: "Contadino Sud", dialog: "\"I campi del sud sono fertili.\"", questBuildingName: "Fattoria Sud" },
+];
+
+const INTERACT_DISTANCE = 60, INTERACT_COOLDOWN = 500, GATHER_DISTANCE = 50, ITEM_DISTANCE = 40;
+const ENEMY_CHASE_DISTANCE = 150, ENEMY_INTERACT_DISTANCE = 55, ENEMY_SPEED = 80;
+
+const NPC_SPRITE_MAP: Record<string, string> = {
+  Guardia: "spr_guardia", Fabbro: "spr_fabbro",
+  Commerciante: "spr_villaggero", Sacerdotessa: "spr_mago",
+  Mercante: "spr_villaggero", Monaco: "spr_mago",
+  Capitano: "spr_guardia2", Contadina: "spr_villaggero",
+  "Contadino Sud": "spr_villaggero", Oste: "spr_villaggero",
+  Giullare: "spr_villaggero", Pescatore: "spr_villaggero",
+};
+
+const ENEMY_SPRITE_MAP: Record<string, string> = { bandit: "spr_bandito", raider: "spr_vichingo" };
+const CHAR_SIZE = 28;
 
 const RESOURCE_NODES: ResourceNode[] = [
   { x: 100, y: 1850, resourceName: "wood", resourceLabel: "Legna", gatherTime: 4, gatherYield: 3 },
@@ -109,21 +124,6 @@ const RESOURCE_NODES: ResourceNode[] = [
 
 interface WorldItemDef { id: number; posX: number; posY: number; name: string; type: string; }
 
-const NPC_SPRITE_MAP: Record<string, string> = {
-  Guardia: "spr_guardia", Fabbro: "spr_fabbro",
-  Commerciante: "spr_villaggero", Sacerdotessa: "spr_mago",
-  Mercante: "spr_villaggero", Monaco: "spr_mago",
-  Capitano: "spr_guardia2", Contadina: "spr_villaggero",
-  "Contadino Sud": "spr_villaggero", Oste: "spr_villaggero",
-  Giullare: "spr_villaggero", Pescatore: "spr_villaggero",
-};
-
-const ENEMY_SPRITE_MAP: Record<string, string> = {
-  bandit: "spr_bandito", raider: "spr_vichingo",
-};
-
-const CHAR_SIZE = 28;
-
 export class WorldScene extends Phaser.Scene {
   private playerSprite!: Phaser.GameObjects.Sprite;
   private otherPlayers: Map<number, { sprite: Phaser.GameObjects.Sprite; label: Phaser.GameObjects.Text }> = new Map();
@@ -141,6 +141,10 @@ export class WorldScene extends Phaser.Scene {
   private resourceMarkers: Phaser.GameObjects.Sprite[] = [];
   private gatheringActive = false;
   private combatActive = false;
+  private enemyHp = new Map<string, number>();
+  private enemyKO = new Map<string, boolean>();
+  private enemyCombatTimer = new Map<string, number>();
+  private enemyHpBars = new Map<string, Phaser.GameObjects.Graphics>();
   private playerNameLabel!: Phaser.GameObjects.Text;
   private worldItemSprites: Map<number, Phaser.GameObjects.Sprite> = new Map();
   private customTileSprites: Phaser.GameObjects.Image[] = [];
@@ -231,6 +235,18 @@ export class WorldScene extends Phaser.Scene {
       const positions = (e as CustomEvent).detail;
       this.applyNpcPositions(positions);
     });
+
+    this.loadNpcPositions();
+  }
+
+  private async loadNpcPositions(): Promise<void> {
+    try {
+      const res = await fetch("/api/world/npc-positions");
+      const positions = await res.json();
+      if (Array.isArray(positions) && positions.length > 0) {
+        this.applyNpcPositions(positions);
+      }
+    } catch {}
   }
 
   update(_time: number, delta: number): void {
@@ -531,19 +547,48 @@ export class WorldScene extends Phaser.Scene {
     if (!this.playerCharacter || !this.playerSprite) return;
     const pk = this.playerCharacter.kingdom; const px = this.playerSprite.x, py = this.playerSprite.y;
     for (const e of this.enemySprites) {
+      if (this.enemyKO.get(e.def.id)) continue;
       const distToPlayer = Phaser.Math.Distance.Between(px, py, e.sprite.x, e.sprite.y);
       const isEnemy = e.def.kingdom === "HOSTILE" || (e.def.kingdom !== "NEUTRAL" && e.def.kingdom !== pk && pk !== "NEUTRAL");
-      if (isEnemy && distToPlayer < ENEMY_CHASE_DISTANCE) {
-        const enemyZone = this.getZoneAt(e.sprite.x, e.sprite.y);
-        if (enemyZone === "VillageA" || enemyZone === "VillageB") { e.chasing = false; e.wanderTarget = { x: e.originX, y: e.originY }; }
-        else {
+      const enemyZone = this.getZoneAt(e.sprite.x, e.sprite.y);
+
+      if (isEnemy && distToPlayer < COMBAT_RANGE) {
+        if (enemyZone !== "VillageA" && enemyZone !== "VillageB") {
+          e.chasing = true;
+          const timer = (this.enemyCombatTimer.get(e.def.id) || 0) + delta;
+          this.enemyCombatTimer.set(e.def.id, timer);
+          if (timer >= COMBAT_INTERVAL && this.playerCharacter.hp > 0) {
+            this.enemyCombatTimer.set(e.def.id, 0);
+            const pDmg = Math.max(2, Math.floor(this.playerCharacter.strength * 1.5 + Math.random() * 5));
+            const eHp = this.enemyHp.get(e.def.id) ?? e.def.hp;
+            const newEHp = Math.max(0, eHp - pDmg);
+            this.enemyHp.set(e.def.id, newEHp);
+            const eDmg = Math.max(1, Math.floor(e.def.strength * 1.5 + Math.random() * 5));
+            this.playerCharacter.hp = Math.max(0, this.playerCharacter.hp - eDmg);
+            this.playerSprite.setTint(0xff8888);
+            this.time.delayedCall(200, () => this.playerSprite.clearTint());
+            e.sprite.setTint(0xff4444);
+            this.time.delayedCall(200, () => e.sprite.clearTint());
+            this.drawEnemyHpBar(e);
+            if (newEHp <= 0) {
+              this.killEnemy(e);
+              this.lootEnemy(e);
+            }
+            if (this.playerCharacter.hp <= 0) {
+              this.playerDeath();
+            }
+          }
+        } else {
+          e.chasing = false; e.wanderTarget = { x: e.originX, y: e.originY };
+        }
+      } else if (isEnemy && distToPlayer < ENEMY_CHASE_DISTANCE && distToPlayer >= COMBAT_RANGE) {
+        if (enemyZone !== "VillageA" && enemyZone !== "VillageB") {
           e.chasing = true;
           const angle = Phaser.Math.Angle.Between(e.sprite.x, e.sprite.y, px, py);
           e.sprite.x += Math.cos(angle) * ENEMY_SPEED * (delta / 1000); e.sprite.y += Math.sin(angle) * ENEMY_SPEED * (delta / 1000);
-          if (distToPlayer < ENEMY_ATTACK_DISTANCE && !this.combatActive && !this.movementDisabled && !this.gatheringActive) {
-            this.combatActive = true; this.movementDisabled = true; e.sprite.setTint(0xff0000);
-            window.dispatchEvent(new CustomEvent("phaser:pve-attack", { detail: { enemyId: e.def.id, enemyName: e.def.label, enemyX: e.sprite.x, enemyY: e.sprite.y } }));
-          }
+          this.enemyCombatTimer.set(e.def.id, 0);
+        } else {
+          e.chasing = false; e.wanderTarget = { x: e.originX, y: e.originY };
         }
       } else {
         e.chasing = false; e.wanderTimer += delta;
@@ -551,8 +596,58 @@ export class WorldScene extends Phaser.Scene {
         const wdist = Phaser.Math.Distance.Between(e.sprite.x, e.sprite.y, e.wanderTarget.x, e.wanderTarget.y);
         if (wdist > 3) { const angle = Phaser.Math.Angle.Between(e.sprite.x, e.sprite.y, e.wanderTarget.x, e.wanderTarget.y); e.sprite.x += Math.cos(angle) * 30 * (delta / 1000); e.sprite.y += Math.sin(angle) * 30 * (delta / 1000); }
       }
-      e.label.x = e.sprite.x; e.label.y = e.sprite.y - 16;
+      e.label.x = e.sprite.x; e.label.y = e.sprite.y - 22;
     }
+  }
+
+  private drawEnemyHpBar(e: EnemySprite): void {
+    const existing = this.enemyHpBars.get(e.def.id);
+    if (existing) existing.destroy();
+    const eh = this.enemyHp.get(e.def.id) ?? e.def.hp;
+    const pct = Math.max(0, eh / e.def.hp);
+    const color = pct > 0.5 ? 0x33aa33 : pct > 0.25 ? 0xc9a44b : 0xcc3333;
+    const g = this.add.graphics();
+    g.fillStyle(0x000000, 0.7); g.fillRect(e.sprite.x - 15, e.sprite.y - 30, 30, 4);
+    g.fillStyle(color); g.fillRect(e.sprite.x - 14, e.sprite.y - 29, Math.floor(28 * pct), 2);
+    g.setDepth(9);
+    this.enemyHpBars.set(e.def.id, g);
+  }
+
+  private killEnemy(e: EnemySprite): void {
+    this.enemyKO.set(e.def.id, true);
+    this.enemyHpBars.get(e.def.id)?.destroy();
+    this.enemyHpBars.delete(e.def.id);
+    e.sprite.setAngle(90);
+    e.sprite.setTint(0x666666);
+    e.label.setText(`💀 ${e.def.label}`);
+  }
+
+  private async lootEnemy(e: EnemySprite): Promise<void> {
+    try {
+      const res = await fetch("/api/combat/pve", { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${localStorage.getItem("auth_token")}` }, body: JSON.stringify({ characterId: this.playerCharacter!.id, enemyId: e.def.id, timingScore: 90 }) });
+      const data = await res.json();
+      const msg = data.message || `Hai sconfitto ${e.def.label}!`;
+      window.dispatchEvent(new CustomEvent("phaser:overlay-message", { detail: { message: msg } }));
+    } catch {}
+
+    this.time.delayedCall(RESPAWN_TIME, () => {
+      this.enemyKO.set(e.def.id, false);
+      this.enemyHp.set(e.def.id, e.def.hp);
+      e.sprite.x = e.originX; e.sprite.y = e.originY;
+      e.sprite.setAngle(0);
+      e.sprite.clearTint();
+      e.label.setText(e.def.label);
+    });
+  }
+
+  private playerDeath(): void {
+    this.playerCharacter!.hp = 100;
+    this.playerCharacter!.energy = 100;
+    const spawnX = this.playerCharacter!.kingdom === "VILLAGE_A" ? 350 : 5400;
+    const spawnY = 700;
+    this.playerSprite.x = spawnX;
+    this.playerSprite.y = spawnY;
+    window.dispatchEvent(new CustomEvent("phaser:overlay-message", { detail: { message: "Sei stato ucciso! Hai perso il 60% dei materiali." } }));
   }
 
   private drawResourceMarkers(): void {
