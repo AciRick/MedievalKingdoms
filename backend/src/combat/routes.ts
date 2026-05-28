@@ -334,7 +334,7 @@ router.post("/pve", requireUser, async (req: Request, res: Response): Promise<vo
         await prisma.character.update({ where: { id: characterId }, data: { gold: Math.floor(char.gold * 0.5) } });
         updateData.hp = 100; updateData.energy = 100;
         updateData.posX = char.kingdom === "VILLAGE_A" ? 350 : 5400;
-        updateData.posY = 700;
+        updateData.posY = 720;
         updateData.zone = char.kingdom === "VILLAGE_A" ? "VillageA" : "VillageB";
       }
 

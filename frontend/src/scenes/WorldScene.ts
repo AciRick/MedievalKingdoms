@@ -290,7 +290,14 @@ export class WorldScene extends Phaser.Scene {
   }
 
   setEventState(_et: string | null, eq: boolean): void { this.earthquakeSpeed = eq; }
-  setPlayerCharacter(character: Character): void { this.playerCharacter = character; if (this.playerNameLabel) this.playerNameLabel.setText(character.name); }
+  setPlayerCharacter(character: Character): void {
+    this.playerCharacter = character;
+    if (this.playerNameLabel) this.playerNameLabel.setText(character.name);
+    this.playerSprite.x = character.posX;
+    this.playerSprite.y = character.posY;
+    this.playerNameLabel.x = character.posX;
+    this.playerNameLabel.y = character.posY - 18;
+  }
 
   addOtherPlayer(characterId: number, name: string, x: number, y: number): void {
     if (this.otherPlayers.has(characterId)) return;
@@ -644,7 +651,7 @@ export class WorldScene extends Phaser.Scene {
     this.playerCharacter!.hp = 100;
     this.playerCharacter!.energy = 100;
     const spawnX = this.playerCharacter!.kingdom === "VILLAGE_A" ? 350 : 5400;
-    const spawnY = 700;
+    const spawnY = 720;
     this.playerSprite.x = spawnX;
     this.playerSprite.y = spawnY;
     window.dispatchEvent(new CustomEvent("phaser:overlay-message", { detail: { message: "Sei stato ucciso! Hai perso il 60% dei materiali." } }));
