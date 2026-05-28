@@ -293,10 +293,12 @@ export class WorldScene extends Phaser.Scene {
   setPlayerCharacter(character: Character): void {
     this.playerCharacter = character;
     if (this.playerNameLabel) this.playerNameLabel.setText(character.name);
-    this.playerSprite.x = character.posX;
-    this.playerSprite.y = character.posY;
-    this.playerNameLabel.x = character.posX;
-    this.playerNameLabel.y = character.posY - 18;
+    if (this.playerSprite) {
+      this.playerSprite.x = character.posX;
+      this.playerSprite.y = character.posY;
+      this.playerNameLabel.x = character.posX;
+      this.playerNameLabel.y = character.posY - 18;
+    }
   }
 
   addOtherPlayer(characterId: number, name: string, x: number, y: number): void {
