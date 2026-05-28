@@ -555,6 +555,8 @@ export class WorldScene extends Phaser.Scene {
   private updateEnemies(delta: number): void {
     if (!this.playerCharacter || !this.playerSprite) return;
     const pk = this.playerCharacter.kingdom; const px = this.playerSprite.x, py = this.playerSprite.y;
+    let closestEnemy: { e: EnemySprite; dist: number } | null = null;
+
     for (const e of this.enemySprites) {
       if (this.enemyKO.get(e.def.id)) continue;
       const distToPlayer = Phaser.Math.Distance.Between(px, py, e.sprite.x, e.sprite.y);
@@ -563,32 +565,8 @@ export class WorldScene extends Phaser.Scene {
 
       if (isEnemy && distToPlayer < COMBAT_RANGE) {
         if (enemyZone !== "VillageA" && enemyZone !== "VillageB") {
+          if (!closestEnemy || distToPlayer < closestEnemy.dist) closestEnemy = { e, dist: distToPlayer };
           e.chasing = true;
-          const timer = (this.enemyCombatTimer.get(e.def.id) || 0) + delta;
-          this.enemyCombatTimer.set(e.def.id, timer);
-          if (timer >= COMBAT_INTERVAL && this.playerCharacter.hp > 0) {
-            this.enemyCombatTimer.set(e.def.id, 0);
-            const pDmg = Math.max(2, Math.floor(this.playerCharacter.strength * 1.5 + Math.random() * 5));
-            const eHp = this.enemyHp.get(e.def.id) ?? e.def.hp;
-            const newEHp = Math.max(0, eHp - pDmg);
-            this.enemyHp.set(e.def.id, newEHp);
-            const eDmg = Math.max(1, Math.floor(e.def.strength * 1.5 + Math.random() * 5));
-            this.playerCharacter.hp = Math.max(0, this.playerCharacter.hp - eDmg);
-            this.playerSprite.setTint(0xff8888);
-            this.time.delayedCall(200, () => this.playerSprite.clearTint());
-            e.sprite.setTint(0xff4444);
-            this.time.delayedCall(200, () => e.sprite.clearTint());
-            this.drawEnemyHpBar(e);
-            this.showDamageNumber(e.sprite.x, e.sprite.y - 20, pDmg, 0xff0000);
-            this.showDamageNumber(this.playerSprite.x, this.playerSprite.y - 20, eDmg, 0xffff00);
-            if (newEHp <= 0) {
-              this.killEnemy(e);
-              this.lootEnemy(e);
-            }
-            if (this.playerCharacter.hp <= 0) {
-              this.playerDeath();
-            }
-          }
         } else {
           e.chasing = false; e.wanderTarget = { x: e.originX, y: e.originY };
         }
@@ -598,8 +576,6 @@ export class WorldScene extends Phaser.Scene {
           const angle = Phaser.Math.Angle.Between(e.sprite.x, e.sprite.y, px, py);
           e.sprite.x += Math.cos(angle) * ENEMY_SPEED * (delta / 1000); e.sprite.y += Math.sin(angle) * ENEMY_SPEED * (delta / 1000);
           this.enemyCombatTimer.set(e.def.id, 0);
-        } else {
-          e.chasing = false; e.wanderTarget = { x: e.originX, y: e.originY };
         }
       } else {
         e.chasing = false; e.wanderTimer += delta;
@@ -609,14 +585,38 @@ export class WorldScene extends Phaser.Scene {
       }
       e.label.x = e.sprite.x; e.label.y = e.sprite.y - 22;
     }
+
+    if (closestEnemy && this.playerCharacter.hp > 0) {
+      const e = closestEnemy.e;
+      const timer = (this.enemyCombatTimer.get(e.def.id) || 0) + delta;
+      this.enemyCombatTimer.set(e.def.id, timer);
+      if (timer >= COMBAT_INTERVAL) {
+        this.enemyCombatTimer.set(e.def.id, 0);
+        const pDmg = Math.max(3, Math.floor(this.playerCharacter.strength * 2 + Math.random() * 8));
+        const eHp = this.enemyHp.get(e.def.id) ?? e.def.hp;
+        const newEHp = Math.max(0, eHp - pDmg);
+        this.enemyHp.set(e.def.id, newEHp);
+        const eDmg = Math.max(2, Math.floor(e.def.strength * 1.5 + Math.random() * 5));
+        this.playerCharacter.hp = Math.max(0, this.playerCharacter.hp - eDmg);
+        this.playerSprite.setTint(0xff8888);
+        this.time.delayedCall(200, () => this.playerSprite.clearTint());
+        e.sprite.setTint(0xff4444);
+        this.time.delayedCall(200, () => e.sprite.clearTint());
+        this.drawEnemyHpBar(e);
+        this.showDamageNumber(e.sprite.x, e.sprite.y - 20, pDmg, 0xff0000);
+        this.showDamageNumber(this.playerSprite.x, this.playerSprite.y - 20, eDmg, 0xffff00);
+        if (newEHp <= 0) { this.killEnemy(e); this.lootEnemy(e); }
+        if (this.playerCharacter.hp <= 0) { this.playerDeath(); }
+      }
+    }
   }
 
   private showDamageNumber(x: number, y: number, dmg: number, color: number): void {
     const txt = this.add.text(x, y, `-${dmg}`, {
-      fontFamily: '"Press Start 2P"', fontSize: "7px", color: `#${color.toString(16).padStart(6, "0")}`,
-      stroke: "#000000", strokeThickness: 2,
+      fontFamily: '"Press Start 2P"', fontSize: "10px", color: `#${color.toString(16).padStart(6, "0")}`,
+      stroke: "#000000", strokeThickness: 3,
     }).setOrigin(0.5).setDepth(50);
-    this.tweens.add({ targets: txt, y: y - 20, alpha: 0, duration: 600, onComplete: () => txt.destroy() });
+    this.tweens.add({ targets: txt, y: y - 25, alpha: 0, duration: 1000, onComplete: () => txt.destroy() });
   }
 
   private drawEnemyHpBar(e: EnemySprite): void {
