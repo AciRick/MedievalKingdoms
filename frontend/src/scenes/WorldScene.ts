@@ -627,14 +627,26 @@ export class WorldScene extends Phaser.Scene {
     e.sprite.setAngle(90);
     e.sprite.setTint(0x666666);
     e.label.setText(`💀 ${e.def.label}`);
+    this.lootEnemy(e);
   }
 
   private async lootEnemy(e: EnemySprite): Promise<void> {
     try {
-      const res = await fetch("/api/combat/pve", { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${localStorage.getItem("auth_token")}` }, body: JSON.stringify({ characterId: this.playerCharacter!.id, enemyId: e.def.id, timingScore: 90 }) });
+      const token = localStorage.getItem("auth_token");
+      const res = await fetch("/api/combat/pve", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ characterId: this.playerCharacter!.id, enemyId: e.def.id, timingScore: 90 }),
+      });
       const data = await res.json();
-      const msg = data.message || `Hai sconfitto ${e.def.label}!`;
-      window.dispatchEvent(new CustomEvent("phaser:overlay-message", { detail: { message: msg } }));
+      let msg = data.message || `${e.def.label} sconfitto!`;
+      const loot = (data as any).loot;
+      if (loot?.name) msg += ` Hai ottenuto: ${loot.name}!`;
+      if (data.playerWon && this.playerCharacter) {
+        this.playerCharacter.xp += (data.xpGain || 0);
+        this.playerCharacter.gold += (data.goldGain || 0);
+      }
+      window.dispatchEvent(new CustomEvent("phaser:overlay-message", { detail: { message: msg, duration: 5000 } }));
     } catch {}
 
     this.time.delayedCall(RESPAWN_TIME, () => {
@@ -647,14 +659,25 @@ export class WorldScene extends Phaser.Scene {
     });
   }
 
-  private playerDeath(): void {
-    this.playerCharacter!.hp = 100;
-    this.playerCharacter!.energy = 100;
-    const spawnX = this.playerCharacter!.kingdom === "VILLAGE_A" ? 350 : 5400;
+  private async playerDeath(): Promise<void> {
+    if (!this.playerCharacter) return;
+    try {
+      const token = localStorage.getItem("auth_token");
+      await fetch("/api/combat/pve", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ characterId: this.playerCharacter.id, enemyId: "bandit_1", timingScore: 0 }),
+      });
+    } catch {}
+    this.playerCharacter.hp = 100;
+    this.playerCharacter.energy = 100;
+    const spawnX = this.playerCharacter.kingdom === "VILLAGE_A" ? 350 : 5400;
     const spawnY = 720;
     this.playerSprite.x = spawnX;
     this.playerSprite.y = spawnY;
-    window.dispatchEvent(new CustomEvent("phaser:overlay-message", { detail: { message: "Sei stato ucciso! Hai perso il 60% dei materiali." } }));
+    this.playerNameLabel.x = spawnX;
+    this.playerNameLabel.y = spawnY - 18;
+    window.dispatchEvent(new CustomEvent("phaser:overlay-message", { detail: { message: "Sei stato ucciso! Hai perso il 60% dei materiali.", duration: 4000 } }));
   }
 
   private drawResourceMarkers(): void {
