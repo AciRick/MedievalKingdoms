@@ -2,19 +2,19 @@ import Phaser from "phaser";
 import type { Character } from "../api/types";
 
 const TILE_SIZE = 32;
-const MAP_WIDTH = 216;
-const MAP_HEIGHT = 108;
+const MAP_WIDTH = 108;
+const MAP_HEIGHT = 54;
 
 const ZONE_GRID: { zone: string; x: number; y: number; w: number; h: number }[] = [
-  { zone: "Abbey", x: 70, y: 0, w: 76, h: 14 },
-  { zone: "VillageA", x: 0, y: 14, w: 55, h: 41 },
-  { zone: "VillageB", x: 161, y: 14, w: 55, h: 41 },
-  { zone: "NoMansLand", x: 55, y: 14, w: 106, h: 41 },
-  { zone: "Forest", x: 0, y: 55, w: 100, h: 25 },
-  { zone: "Lake", x: 100, y: 55, w: 30, h: 25 },
-  { zone: "Coast", x: 130, y: 55, w: 86, h: 25 },
-  { zone: "DeepForest", x: 0, y: 80, w: 100, h: 28 },
-  { zone: "Mountains", x: 100, y: 80, w: 80, h: 28 },
+  { zone: "Abbey", x: 35, y: 0, w: 38, h: 7 },
+  { zone: "VillageA", x: 0, y: 7, w: 28, h: 21 },
+  { zone: "VillageB", x: 80, y: 7, w: 28, h: 21 },
+  { zone: "NoMansLand", x: 28, y: 7, w: 52, h: 21 },
+  { zone: "Forest", x: 0, y: 28, w: 50, h: 12 },
+  { zone: "Lake", x: 50, y: 28, w: 15, h: 12 },
+  { zone: "Coast", x: 65, y: 28, w: 43, h: 12 },
+  { zone: "DeepForest", x: 0, y: 40, w: 50, h: 14 },
+  { zone: "Mountains", x: 50, y: 40, w: 40, h: 14 },
 ];
 
 const ZONE_FLOOR_TILE: Record<string, string> = {
@@ -68,18 +68,18 @@ const BUILDING_DATA: BuildingDef[] = [
 ];
 
 const NPC_DATA: NpcDef[] = [
-  { x: 400, y: 600, color: 0x22cc22, label: "Mercante", dialog: "\"Benvenuto! Ho merci rare.\"", questBuildingName: "Capanna Foresta" },
-  { x: 200, y: 700, color: 0x8888ff, label: "Guardia", dialog: "\"Fermo! Ah, sei tu. Attento nella Terra di Nessuno.\"", questBuildingName: "Castello Nord" },
-  { x: 180, y: 550, color: 0xcc8844, label: "Fabbro", dialog: "\"Le mie lame sono le migliori!\"", questBuildingName: "Castello Nord" },
-  { x: 500, y: 650, color: 0x44cc44, label: "Oste", dialog: "\"Birra fresca! Vuoi vendermi legna?\"", shop: { buys: "wood", buyLabel: "Legna", sellPrice: 2 } },
-  { x: 350, y: 580, color: 0xcc44cc, label: "Giullare", dialog: "\"Ahah! Il re è così grasso...\"" },
-  { x: 300, y: 720, color: 0x44dd44, label: "Contadina", dialog: "\"Il raccolto è stato buono quest'anno.\"", questBuildingName: "Fattoria Nord" },
-  { x: 2100, y: 280, color: 0xaaaaaa, label: "Monaco", dialog: "\"La pace sia con te, viandante. L'Abbazia ha bisogno di erbe medicinali.\"", questBuildingName: "Abbazia" },
-  { x: 5200, y: 700, color: 0x44aadd, label: "Commerciante", dialog: "\"Merci del sud!\"", questBuildingName: "Tempio" },
-  { x: 5150, y: 620, color: 0xaaaaff, label: "Sacerdotessa", dialog: "\"Che la luce ti guidi.\"" },
-  { x: 5400, y: 750, color: 0x8888ff, label: "Capitano", dialog: "\"Proteggo queste mura.\"", questBuildingName: "Miniera" },
-  { x: 5800, y: 900, color: 0x44aadd, label: "Pescatore", dialog: "\"Pesce fresco!\"", questBuildingName: "Porto Comm.le", shop: { buys: "fish", buyLabel: "Pesce", sellPrice: 2 } },
-  { x: 5250, y: 850, color: 0x88cc88, label: "Contadino Sud", dialog: "\"I campi del sud sono fertili.\"", questBuildingName: "Fattoria Sud" },
+  { x: 200, y: 300, color: 0x22cc22, label: "Mercante", dialog: "\"Benvenuto! Ho merci rare.\"", questBuildingName: "Capanna Foresta" },
+  { x: 100, y: 350, color: 0x8888ff, label: "Guardia", dialog: "\"Fermo! Ah, sei tu. Attento nella Terra di Nessuno.\"", questBuildingName: "Castello Nord" },
+  { x: 90, y: 275, color: 0xcc8844, label: "Fabbro", dialog: "\"Le mie lame sono le migliori!\"", questBuildingName: "Castello Nord" },
+  { x: 250, y: 325, color: 0x44cc44, label: "Oste", dialog: "\"Birra fresca! Vuoi vendermi legna?\"", shop: { buys: "wood", buyLabel: "Legna", sellPrice: 2 } },
+  { x: 175, y: 290, color: 0xcc44cc, label: "Giullare", dialog: "\"Ahah! Il re è così grasso...\"" },
+  { x: 150, y: 360, color: 0x44dd44, label: "Contadina", dialog: "\"Il raccolto è stato buono quest'anno.\"", questBuildingName: "Fattoria Nord" },
+  { x: 1050, y: 140, color: 0xaaaaaa, label: "Monaco", dialog: "\"La pace sia con te, viandante. L'Abbazia ha bisogno di erbe medicinali.\"", questBuildingName: "Abbazia" },
+  { x: 2600, y: 350, color: 0x44aadd, label: "Commerciante", dialog: "\"Merci del sud!\"", questBuildingName: "Tempio" },
+  { x: 2575, y: 310, color: 0xaaaaff, label: "Sacerdotessa", dialog: "\"Che la luce ti guidi.\"" },
+  { x: 2700, y: 375, color: 0x8888ff, label: "Capitano", dialog: "\"Proteggo queste mura.\"", questBuildingName: "Miniera" },
+  { x: 2900, y: 450, color: 0x44aadd, label: "Pescatore", dialog: "\"Pesce fresco!\"", questBuildingName: "Porto Comm.le", shop: { buys: "fish", buyLabel: "Pesce", sellPrice: 2 } },
+  { x: 2625, y: 425, color: 0x88cc88, label: "Contadino Sud", dialog: "\"I campi del sud sono fertili.\"", questBuildingName: "Fattoria Sud" },
 ];
 
 const INTERACT_DISTANCE = 60, INTERACT_COOLDOWN = 500, GATHER_DISTANCE = 50, ITEM_DISTANCE = 40;
@@ -427,19 +427,19 @@ export class WorldScene extends Phaser.Scene {
 
   private drawWall(): void {
     const wallKey = "dung_0040"; const depth = 12;
-    const va_l = 0, va_r = 55, va_t = 14, va_b = 55;
+    const va_l = 0, va_r = 28, va_t = 7, va_b = 27;
     for (let c = va_l; c < va_r; c++) this.add.image(c * TILE_SIZE + TILE_SIZE / 2, va_t * TILE_SIZE + TILE_SIZE / 2, wallKey).setDisplaySize(TILE_SIZE, TILE_SIZE).setDepth(depth);
     for (let c = va_l; c < va_r; c++) this.add.image(c * TILE_SIZE + TILE_SIZE / 2, va_b * TILE_SIZE + TILE_SIZE / 2, wallKey).setDisplaySize(TILE_SIZE, TILE_SIZE).setDepth(depth);
-    for (let r = va_t; r < va_b; r++) { if (r !== 34 && r !== 35) this.add.image(va_r * TILE_SIZE + TILE_SIZE / 2, r * TILE_SIZE + TILE_SIZE / 2, wallKey).setDisplaySize(TILE_SIZE, TILE_SIZE).setDepth(depth); }
-    this.add.image(va_r * TILE_SIZE + TILE_SIZE / 2, 34 * TILE_SIZE + TILE_SIZE / 2, "town_0113").setDisplaySize(TILE_SIZE, TILE_SIZE).setDepth(depth);
-    this.add.image(va_r * TILE_SIZE + TILE_SIZE / 2, 35 * TILE_SIZE + TILE_SIZE / 2, "town_0114").setDisplaySize(TILE_SIZE, TILE_SIZE).setDepth(depth);
+    for (let r = va_t; r < va_b; r++) { if (r !== 17 && r !== 18) this.add.image(va_r * TILE_SIZE + TILE_SIZE / 2, r * TILE_SIZE + TILE_SIZE / 2, wallKey).setDisplaySize(TILE_SIZE, TILE_SIZE).setDepth(depth); }
+    this.add.image(va_r * TILE_SIZE + TILE_SIZE / 2, 17 * TILE_SIZE + TILE_SIZE / 2, "town_0113").setDisplaySize(TILE_SIZE, TILE_SIZE).setDepth(depth);
+    this.add.image(va_r * TILE_SIZE + TILE_SIZE / 2, 18 * TILE_SIZE + TILE_SIZE / 2, "town_0114").setDisplaySize(TILE_SIZE, TILE_SIZE).setDepth(depth);
 
-    const vb_l = 161, vb_r = 216, vb_t = 14, vb_b = 55;
+    const vb_l = 80, vb_r = 108, vb_t = 7, vb_b = 27;
     for (let c = vb_l; c < vb_r; c++) this.add.image(c * TILE_SIZE + TILE_SIZE / 2, vb_t * TILE_SIZE + TILE_SIZE / 2, wallKey).setDisplaySize(TILE_SIZE, TILE_SIZE).setDepth(depth);
     for (let c = vb_l; c < vb_r; c++) this.add.image(c * TILE_SIZE + TILE_SIZE / 2, vb_b * TILE_SIZE + TILE_SIZE / 2, wallKey).setDisplaySize(TILE_SIZE, TILE_SIZE).setDepth(depth);
-    for (let r = vb_t; r < vb_b; r++) { if (r !== 34 && r !== 35) this.add.image(vb_l * TILE_SIZE + TILE_SIZE / 2, r * TILE_SIZE + TILE_SIZE / 2, wallKey).setDisplaySize(TILE_SIZE, TILE_SIZE).setDepth(depth); }
-    this.add.image(vb_l * TILE_SIZE + TILE_SIZE / 2, 34 * TILE_SIZE + TILE_SIZE / 2, "town_0113").setDisplaySize(TILE_SIZE, TILE_SIZE).setDepth(depth);
-    this.add.image(vb_l * TILE_SIZE + TILE_SIZE / 2, 35 * TILE_SIZE + TILE_SIZE / 2, "town_0114").setDisplaySize(TILE_SIZE, TILE_SIZE).setDepth(depth);
+    for (let r = vb_t; r < vb_b; r++) { if (r !== 17 && r !== 18) this.add.image(vb_l * TILE_SIZE + TILE_SIZE / 2, r * TILE_SIZE + TILE_SIZE / 2, wallKey).setDisplaySize(TILE_SIZE, TILE_SIZE).setDepth(depth); }
+    this.add.image(vb_l * TILE_SIZE + TILE_SIZE / 2, 17 * TILE_SIZE + TILE_SIZE / 2, "town_0113").setDisplaySize(TILE_SIZE, TILE_SIZE).setDepth(depth);
+    this.add.image(vb_l * TILE_SIZE + TILE_SIZE / 2, 18 * TILE_SIZE + TILE_SIZE / 2, "town_0114").setDisplaySize(TILE_SIZE, TILE_SIZE).setDepth(depth);
   }
 
   private drawBuildings(): void {
@@ -488,8 +488,8 @@ export class WorldScene extends Phaser.Scene {
   }
 
   private drawWater(): void {
-    for (let c = 130; c < 216; c++)
-      for (let r = 55; r < 58; r++)
+    for (let c = 65; c < 108; c++)
+      for (let r = 27; r < 29; r++)
         this.add.image(c * TILE_SIZE + TILE_SIZE / 2, r * TILE_SIZE + TILE_SIZE / 2, "dung_0048").setDisplaySize(TILE_SIZE, TILE_SIZE).setDepth(3);
   }
 
@@ -671,8 +671,8 @@ export class WorldScene extends Phaser.Scene {
     } catch {}
     this.playerCharacter.hp = 100;
     this.playerCharacter.energy = 100;
-    const spawnX = this.playerCharacter.kingdom === "VILLAGE_A" ? 350 : 5400;
-    const spawnY = 720;
+    const spawnX = this.playerCharacter.kingdom === "VILLAGE_A" ? 175 : 2700;
+    const spawnY = 360;
     this.playerSprite.x = spawnX;
     this.playerSprite.y = spawnY;
     this.playerNameLabel.x = spawnX;
@@ -761,12 +761,12 @@ export class WorldScene extends Phaser.Scene {
   }
 
   isWallTile(col: number, row: number): boolean {
-    if (col === 55 && row >= 14 && row <= 54) return row !== 34 && row !== 35;
-    if (col === 161 && row >= 14 && row <= 54) return row !== 34 && row !== 35;
-    if (row === 14 && col >= 0 && col <= 54) return true;
-    if (row === 55 && col >= 0 && col <= 54) return true;
-    if (row === 14 && col >= 161 && col <= 215) return true;
-    if (row === 55 && col >= 161 && col <= 215) return true;
+    if (col === 28 && row >= 7 && row <= 27) return row !== 34 && row !== 35;
+    if (col === 80 && row >= 7 && row <= 27) return row !== 34 && row !== 35;
+    if (row === 7 && col >= 0 && col <= 27) return true;
+    if (row === 27 && col >= 0 && col <= 27) return true;
+    if (row === 7 && col >= 80 && col <= 107) return true;
+    if (row === 27 && col >= 80 && col <= 107) return true;
     return false;
   }
 

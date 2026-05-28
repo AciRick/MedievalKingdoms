@@ -2,20 +2,20 @@ import { useState, useRef, useEffect } from "react";
 
 interface Tile { col: number; row: number; key: string; }
 
-const CHUNK_W = 36, CHUNK_H = 18;
+const CHUNK_W = 18, CHUNK_H = 9;
 const CHUNKS_X = 6, CHUNKS_Y = 6;
-const MW = 216, MH = 108;
+const MW = 108, MH = 54;
 
 const ZONES: { key: string; name: string; x: number; y: number; w: number; h: number; floorKey: string; color: string }[] = [
-  { key: "Abbey", name: "Abbazia", x: 70, y: 0, w: 76, h: 14, floorKey: "dung_0000", color: "#8a7a9a" },
-  { key: "VillageA", name: "Villaggio del Nord", x: 0, y: 14, w: 55, h: 41, floorKey: "town_0000", color: "#4a7c59" },
-  { key: "VillageB", name: "Villaggio del Sud", x: 161, y: 14, w: 55, h: 41, floorKey: "town_0000", color: "#5a6b8a" },
-  { key: "NoMansLand", name: "Terra di Nessuno", x: 55, y: 14, w: 106, h: 41, floorKey: "town_0012", color: "#6b5b3a" },
-  { key: "Forest", name: "Foresta", x: 0, y: 55, w: 100, h: 25, floorKey: "town_0002", color: "#2d5a27" },
-  { key: "Lake", name: "Lago", x: 100, y: 55, w: 30, h: 25, floorKey: "rpg_0198", color: "#4a8a9a" },
-  { key: "Coast", name: "Costa Marina", x: 130, y: 55, w: 86, h: 25, floorKey: "rpg_0198", color: "#3a6b8a" },
-  { key: "DeepForest", name: "Foresta Profonda", x: 0, y: 80, w: 100, h: 28, floorKey: "town_0002", color: "#1d3a17" },
-  { key: "Mountains", name: "Montagne", x: 100, y: 80, w: 80, h: 28, floorKey: "dung_0000", color: "#5a4a3a" },
+  { key: "Abbey", name: "Abbazia", x: 35, y: 0, w: 38, h: 7, floorKey: "dung_0000", color: "#8a7a9a" },
+  { key: "VillageA", name: "Villaggio del Nord", x: 0, y: 7, w: 28, h: 21, floorKey: "town_0000", color: "#4a7c59" },
+  { key: "VillageB", name: "Villaggio del Sud", x: 80, y: 7, w: 28, h: 21, floorKey: "town_0000", color: "#5a6b8a" },
+  { key: "NoMansLand", name: "Terra di Nessuno", x: 28, y: 7, w: 52, h: 21, floorKey: "town_0012", color: "#6b5b3a" },
+  { key: "Forest", name: "Foresta", x: 0, y: 28, w: 50, h: 12, floorKey: "town_0002", color: "#2d5a27" },
+  { key: "Lake", name: "Lago", x: 50, y: 28, w: 15, h: 12, floorKey: "rpg_0198", color: "#4a8a9a" },
+  { key: "Coast", name: "Costa Marina", x: 65, y: 28, w: 43, h: 12, floorKey: "rpg_0198", color: "#3a6b8a" },
+  { key: "DeepForest", name: "Foresta Profonda", x: 0, y: 40, w: 50, h: 14, floorKey: "town_0002", color: "#1d3a17" },
+  { key: "Mountains", name: "Montagne", x: 50, y: 40, w: 40, h: 14, floorKey: "dung_0000", color: "#5a4a3a" },
 ];
 
 const QUEST_BUILDINGS: { col: number; row: number; w: number; h: number; name: string; quest: boolean; rest: boolean }[] = [
